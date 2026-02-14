@@ -5,16 +5,23 @@
 
 // Core types and interfaces
 export type {
-	ProviderId,
 	LatLng,
-	GeocodingResult,
-	DistanceMatrixElement,
-	DistanceMatrixResult,
+	Bounds,
+	Address,
+	GeocodeResult,
+	ReverseGeocodeResult,
+	DistanceMatrixEntry,
+	DistanceMatrixResponse,
 	RouteStep,
 	RouteResult,
 } from './core/types'
-export type { CacheInterface } from './core/cache.interface'
-export type { MapProvider } from './core/provider.interface'
+export type { Cache } from './core/cache.interface'
+export type {
+	MapProvider,
+	GeocodeOptions,
+	DistanceMatrixOptions,
+	RouteOptions,
+} from './core/provider.interface'
 
 // Provider factory and implementations
 export { createProvider, GoogleProvider, MapboxProvider } from './providers'

@@ -1,38 +1,32 @@
 /**
- * Abstract cache interface for Redis/Memcached or in-memory implementations.
- * The client is to be injected by the consumer.
+ * Generic cache interface for storing and retrieving data.
+ * Implementations can use Redis, in-memory, NoOp, etc.
  */
-
-/**
- * Cache interface used by the library for geocoding, distance, and route caching.
- * Implement with Redis, Memcached, or in-memory store.
- */
-export interface CacheInterface {
+export interface Cache {
 	/**
-	 * Get a value by key.
-	 * @param key - Cache key.
-	 * @returns Cached value or undefined if missing/expired.
+	 * Retrieve a value from cache
+	 * @param key - Cache key
+	 * @returns The cached value or undefined if not found/expired
 	 */
 	get<T>(key: string): Promise<T | undefined>
 
 	/**
-	 * Set a value with optional TTL.
-	 * @param key - Cache key.
-	 * @param value - Value to store (will be serialized).
-	 * @param ttlSeconds - Optional time-to-live in seconds.
+	 * Store a value in cache with TTL
+	 * @param key - Cache key
+	 * @param value - Value to store
+	 * @param ttlSeconds - Time to live in seconds
 	 */
-	set(key: string, value: unknown, ttlSeconds?: number): Promise<void>
+	set<T>(key: string, value: T, ttlSeconds: number): Promise<void>
 
 	/**
-	 * Delete a key.
-	 * @param key - Cache key.
+	 * Remove a value from cache
+	 * @param key - Cache key to delete
 	 */
 	del(key: string): Promise<void>
 
 	/**
-	 * Check if a key exists (optional; some implementations may not support).
-	 * @param key - Cache key.
-	 * @returns True if the key exists.
+	 * Optional: Check if cache has a key
+	 * @param key - Cache key
 	 */
 	has?(key: string): Promise<boolean>
 }

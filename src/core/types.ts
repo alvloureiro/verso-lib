@@ -1,70 +1,111 @@
 /**
- * Core types shared across map providers and services.
+ * Core domain types shared across map providers and services.
  */
 
-/** Supported map provider identifiers. */
-export type ProviderId = 'google' | 'mapbox'
-
-/** Geographic coordinates (WGS84). */
+/**
+ * Geographic coordinates (latitude/longitude)
+ */
 export interface LatLng {
-	/** Latitude in degrees. */
 	lat: number
-	/** Longitude in degrees. */
 	lng: number
 }
 
-/** Result of a geocoding request (address → coordinates). */
-export interface GeocodingResult {
-	/** Resolved coordinates. */
-	location: LatLng
-	/** Formatted address string from the provider. */
-	formattedAddress?: string
-	/** Place ID or equivalent from the provider. */
+/**
+ * Geographic bounding box
+ */
+export interface Bounds {
+	northeast: LatLng
+	southwest: LatLng
+}
+
+/**
+ * Structured address information
+ */
+export interface Address {
+	formattedAddress: string
+	street?: string
+	number?: string
+	neighborhood?: string
+	city?: string
+	state?: string
+	country?: string
+	postalCode?: string
 	placeId?: string
 }
 
-/** Single element in a distance matrix (origin index → destination index). */
-export interface DistanceMatrixElement {
-	/** Distance in meters. */
-	distanceMeters: number
-	/** Duration in seconds. */
-	durationSeconds: number
-	/** Optional status from the provider. */
-	status?: string
+/**
+ * Result of a geocoding operation (address -> coordinates)
+ */
+export interface GeocodeResult {
+	coordinates: LatLng
+	address: Address
+	bounds?: Bounds
 }
 
-/** Result of a distance matrix request. */
-export interface DistanceMatrixResult {
-	/** Row-major matrix: [originIndex][destinationIndex]. */
-	elements: DistanceMatrixElement[][]
-	/** Origin addresses or coordinates used. */
-	origins: (string | LatLng)[]
-	/** Destination addresses or coordinates used. */
-	destinations: (string | LatLng)[]
+/**
+ * Result of a reverse geocoding operation (coordinates -> address)
+ */
+export interface ReverseGeocodeResult {
+	address: Address
+	coordinates: LatLng
 }
 
-/** Single step in a route (e.g. turn instruction). */
+/**
+ * Single entry in a distance matrix response
+ */
+export interface DistanceMatrixEntry {
+	distance: {
+		text: string // Human-readable (e.g., "5.3 km")
+		value: number // Value in meters
+	}
+	duration: {
+		text: string // Human-readable (e.g., "12 mins")
+		value: number // Value in seconds
+	}
+	status: 'OK' | 'NOT_FOUND' | 'ZERO_RESULTS'
+}
+
+/**
+ * Complete distance matrix response
+ */
+export interface DistanceMatrixResponse {
+	origins: LatLng[]
+	destinations: LatLng[]
+	rows: DistanceMatrixEntry[][]
+}
+
+/**
+ * A step in a route (turn-by-turn instruction)
+ */
 export interface RouteStep {
-	/** Human-readable instruction. */
-	instruction?: string
-	/** Distance in meters for this step. */
-	distanceMeters: number
-	/** Duration in seconds for this step. */
-	durationSeconds: number
-	/** Start point of the step. */
+	instruction: string // e.g., "Turn left onto Av. Paulista"
+	distance: {
+		text: string
+		value: number
+	}
+	duration: {
+		text: string
+		value: number
+	}
 	startLocation: LatLng
-	/** End point of the step. */
 	endLocation: LatLng
+	polyline?: string // Encoded polyline for this step
 }
 
-/** Result of a routing request (directions). */
+/**
+ * Complete route result
+ */
 export interface RouteResult {
-	/** Ordered list of points forming the path. */
-	polyline: LatLng[]
-	/** Step-by-step instructions. */
+	summary: string // e.g., "Via Av. Paulista"
+	distance: {
+		text: string
+		value: number
+	}
+	duration: {
+		text: string
+		value: number
+	}
+	polyline: string // Encoded polyline for the entire route
 	steps: RouteStep[]
-	/** Total distance in meters. */
-	totalDistanceMeters: number
-	/** Total duration in seconds. */
-	totalDurationSeconds: number
+	bounds: Bounds
 }

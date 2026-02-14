@@ -2,12 +2,19 @@
  * Mapbox API provider (stub). Implement with Geocoding, Matrix, Directions APIs.
  */
 
-import type { MapProvider } from '../../core/provider.interface'
 import type {
-	GeocodingResult,
-	DistanceMatrixResult,
+	GeocodeOptions,
+	DistanceMatrixOptions,
+	RouteOptions,
+	MapProvider,
+} from '../../core/provider.interface'
+import type {
+	GeocodeResult,
+	ReverseGeocodeResult,
+	DistanceMatrixResponse,
 	RouteResult,
 	LatLng,
+	Bounds,
 } from '../../core/types'
 
 export interface MapboxProviderConfig {
@@ -27,40 +34,78 @@ export class MapboxProvider implements MapProvider {
 		this.baseUrl = config.baseUrl ?? 'https://api.mapbox.com'
 	}
 
-	async geocode(address: string): Promise<GeocodingResult | null> {
+	async geocode(
+		address: string,
+		options?: GeocodeOptions
+	): Promise<GeocodeResult[]> {
 		// TODO: call Mapbox Geocoding API
 		void this.accessToken
 		void this.baseUrl
 		void address
-		return null
+		void options
+		return []
 	}
 
-	async getDistanceMatrix(
-		origins: (string | LatLng)[],
-		destinations: (string | LatLng)[]
-	): Promise<DistanceMatrixResult> {
-		// TODO: call Mapbox Matrix API
-		void origins
-		void destinations
+	async reverseGeocode(
+		lat: number,
+		lng: number
+	): Promise<ReverseGeocodeResult> {
+		// TODO: call Mapbox Reverse Geocoding API
+		void this.accessToken
+		void this.baseUrl
 		return {
-			elements: [],
-			origins: [...origins],
-			destinations: [...destinations],
+			address: { formattedAddress: '' },
+			coordinates: { lat, lng },
 		}
 	}
 
+	async getDistanceMatrix(
+		origins: LatLng[],
+		destinations: LatLng[],
+		options?: DistanceMatrixOptions
+	): Promise<DistanceMatrixResponse> {
+		// TODO: call Mapbox Matrix API
+		void this.accessToken
+		void this.baseUrl
+		void options
+		const rows = origins.map(() =>
+			destinations.map(() => ({
+				distance: { text: '0 km', value: 0 },
+				duration: { text: '0 mins', value: 0 },
+				status: 'ZERO_RESULTS' as const,
+			}))
+		)
+		return { origins, destinations, rows }
+	}
+
 	async getRoute(
-		origin: string | LatLng,
-		destination: string | LatLng
+		origin: LatLng,
+		destination: LatLng,
+		waypoints?: LatLng[],
+		options?: RouteOptions
 	): Promise<RouteResult> {
 		// TODO: call Mapbox Directions API
-		void origin
-		void destination
+		void this.accessToken
+		void this.baseUrl
+		void waypoints
+		void options
+		const bounds: Bounds = {
+			northeast: {
+				lat: Math.max(origin.lat, destination.lat),
+				lng: Math.max(origin.lng, destination.lng),
+			},
+			southwest: {
+				lat: Math.min(origin.lat, destination.lat),
+				lng: Math.min(origin.lng, destination.lng),
+			},
+		}
 		return {
-			polyline: [],
+			summary: '',
+			distance: { text: '0 km', value: 0 },
+			duration: { text: '0 mins', value: 0 },
+			polyline: '',
 			steps: [],
-			totalDistanceMeters: 0,
-			totalDurationSeconds: 0,
+			bounds,
 		}
 	}
 }

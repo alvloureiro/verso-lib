@@ -2,13 +2,13 @@
  * Geocoding service: address → coordinates, with optional caching.
  */
 
-import type { CacheInterface } from '../core/cache.interface'
+import type { Cache } from '../core/cache.interface'
 import type { MapProvider } from '../core/provider.interface'
-import type { GeocodingResult } from '../core/types'
+import type { GeocodeResult } from '../core/types'
 
 export interface GeocodingServiceOptions {
 	provider: MapProvider
-	cache?: CacheInterface
+	cache?: Cache
 	cacheTtlSeconds?: number
 }
 
@@ -21,17 +21,21 @@ export class GeocodingService {
 	/**
 	 * Resolve an address to coordinates.
 	 * @param address - Address or place query.
-	 * @returns Geocoding result or null.
+	 * @returns Array of geocode results (empty if not found).
 	 */
-	async geocode(address: string): Promise<GeocodingResult | null> {
+	async geocode(address: string): Promise<GeocodeResult[]> {
 		const cache = this.options.cache
 		const cacheKey = `geocode:${address}`
-		if (cache) {
-			const cached = await cache.get<GeocodingResult>(cacheKey)
+		if (cache && this.options.cacheTtlSeconds !== undefined) {
+			const cached = await cache.get<GeocodeResult[]>(cacheKey)
 			if (cached !== undefined) return cached
 		}
 		const result = await this.options.provider.geocode(address)
-		if (cache && result !== null && this.options.cacheTtlSeconds) {
+		if (
+			cache &&
+			result.length > 0 &&
+			this.options.cacheTtlSeconds !== undefined
+		) {
 			await cache.set(cacheKey, result, this.options.cacheTtlSeconds)
 		}
 		return result

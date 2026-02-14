@@ -1,45 +1,87 @@
 /**
- * Map provider interface. Concrete implementations: Google Maps, Mapbox, etc.
+ * Map provider contract. All map providers (Google, Mapbox, etc.) must implement this interface.
  */
 
 import type {
-	GeocodingResult,
-	DistanceMatrixResult,
-	RouteResult,
 	LatLng,
+	GeocodeResult,
+	ReverseGeocodeResult,
+	DistanceMatrixResponse,
+	RouteResult,
 } from './types'
 
 /**
- * Common interface for map API providers (Google, Mapbox, etc.).
- * Enables swapping providers without changing consumer code.
+ * Options for geocoding requests
+ */
+export interface GeocodeOptions {
+	region?: string // Bias results to a region (e.g., 'br')
+	language?: string // Language for results
+}
+
+/**
+ * Options for distance matrix requests
+ */
+export interface DistanceMatrixOptions {
+	mode?: 'driving' | 'walking' | 'bicycling' | 'transit'
+	language?: string
+	avoid?: ('tolls' | 'highways' | 'ferries')[]
+}
+
+/**
+ * Options for route requests
+ */
+export interface RouteOptions {
+	mode?: 'driving' | 'walking' | 'bicycling' | 'transit'
+	alternatives?: boolean // Request alternative routes
+	language?: string
+	avoid?: ('tolls' | 'highways' | 'ferries')[]
+}
+
+/**
+ * Contract that all map providers must implement
  */
 export interface MapProvider {
 	/**
-	 * Resolve an address or place query to coordinates.
-	 * @param address - Address string or place query.
-	 * @returns Geocoding result or null if not found.
+	 * Convert an address string to geographic coordinates
+	 * @param address - The address to geocode (e.g., "Av. Paulista, 1000, São Paulo")
+	 * @param options - Optional parameters
+	 * @returns Array of geocode results (multiple if ambiguous)
 	 */
-	geocode(address: string): Promise<GeocodingResult | null>
+	geocode(address: string, options?: GeocodeOptions): Promise<GeocodeResult[]>
 
 	/**
-	 * Compute distance matrix between origins and destinations.
-	 * @param origins - Origin addresses or coordinates.
-	 * @param destinations - Destination addresses or coordinates.
-	 * @returns Matrix of distances and durations.
+	 * Convert geographic coordinates to an address
+	 * @param lat - Latitude
+	 * @param lng - Longitude
+	 * @returns Reverse geocode result with address information
+	 */
+	reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult>
+
+	/**
+	 * Calculate distances and durations between multiple origins and destinations
+	 * @param origins - Array of starting points
+	 * @param destinations - Array of ending points
+	 * @param options - Optional parameters
+	 * @returns Matrix of distances and durations
 	 */
 	getDistanceMatrix(
-		origins: (string | LatLng)[],
-		destinations: (string | LatLng)[]
-	): Promise<DistanceMatrixResult>
+		origins: LatLng[],
+		destinations: LatLng[],
+		options?: DistanceMatrixOptions
+	): Promise<DistanceMatrixResponse>
 
 	/**
-	 * Get route (directions) between origin and destination.
-	 * @param origin - Origin address or coordinates.
-	 * @param destination - Destination address or coordinates.
-	 * @returns Route with polyline and steps.
+	 * Get a route/directions between two or more points
+	 * @param origin - Starting point
+	 * @param destination - Ending point
+	 * @param waypoints - Optional intermediate points
+	 * @param options - Optional parameters
+	 * @returns Route information including polyline and steps
 	 */
 	getRoute(
-		origin: string | LatLng,
-		destination: string | LatLng
+		origin: LatLng,
+		destination: LatLng,
+		waypoints?: LatLng[],
+		options?: RouteOptions
 	): Promise<RouteResult>
 }

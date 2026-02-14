@@ -2,7 +2,7 @@
  * In-memory cache for development and testing.
  */
 
-import type { CacheInterface } from '../core/cache.interface'
+import type { Cache } from '../core/cache.interface'
 
 interface Entry {
 	value: unknown
@@ -10,9 +10,9 @@ interface Entry {
 }
 
 /**
- * In-memory cache with optional TTL. Not suitable for production at scale.
+ * In-memory cache with TTL. Not suitable for production at scale.
  */
-export class MemoryCache implements CacheInterface {
+export class MemoryCache implements Cache {
 	private readonly store = new Map<string, Entry>()
 
 	async get<T>(key: string): Promise<T | undefined> {
@@ -25,9 +25,9 @@ export class MemoryCache implements CacheInterface {
 		return entry.value as T
 	}
 
-	async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+	async set<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
 		const expiresAt =
-			ttlSeconds !== undefined ? Date.now() + ttlSeconds * 1000 : undefined
+			ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : undefined
 		this.store.set(key, { value, expiresAt })
 	}
 

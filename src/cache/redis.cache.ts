@@ -3,7 +3,7 @@
  * Compatible with ioredis, node-redis, or similar (get/set/del interface).
  */
 
-import type { CacheInterface } from '../core/cache.interface'
+import type { Cache } from '../core/cache.interface'
 
 /**
  * Minimal Redis-like client interface (inject actual Redis client).
@@ -17,7 +17,7 @@ export interface RedisLikeClient {
 /**
  * Redis-backed cache. Inject your Redis client (e.g. from ioredis or node-redis).
  */
-export class RedisCache implements CacheInterface {
+export class RedisCache implements Cache {
 	constructor(private readonly client: RedisLikeClient) {}
 
 	async get<T>(key: string): Promise<T | undefined> {
@@ -30,10 +30,10 @@ export class RedisCache implements CacheInterface {
 		}
 	}
 
-	async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+	async set<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
 		const serialized = JSON.stringify(value)
 		await this.client.set(key, serialized, {
-			...(ttlSeconds !== undefined && { EX: ttlSeconds }),
+			...(ttlSeconds > 0 && { EX: ttlSeconds }),
 		})
 	}
 
