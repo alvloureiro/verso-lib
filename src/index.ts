@@ -45,17 +45,12 @@ export type { RedisLikeClient } from './cache/redis.cache'
 
 // HTTP client
 export { HttpClient } from './http/http-client'
-export type { HttpClientOptions } from './http/http-client'
 export type {
-	RequestContext,
-	ResponseContext,
-	RequestInterceptor,
-	ResponseInterceptor,
-} from './http/interceptors'
-export {
-	createRetryInterceptor,
-	createLoggingInterceptor,
-} from './http/interceptors'
+	RequestOptions,
+	HttpClientConfig,
+	HttpResponse,
+	HttpError,
+} from './http/http-client'
 
 // Utils
 export { haversineDistanceMeters } from './utils/geo.utils'

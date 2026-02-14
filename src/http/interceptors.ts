@@ -1,67 +1,135 @@
 /**
- * Interceptors for HTTP client (logging, retry, etc.).
- * Can be applied when extending the HTTP client.
+ * Helpers for HTTP client: retry decisions, backoff, and logging.
  */
 
-export interface RequestContext {
-	url: string
-	method: string
-	headers?: Record<string, string>
+import type { HttpClientConfig } from './types'
+
+const LOG_PREFIX = '[HttpClient]'
+
+/**
+ * Sleep for a given number of milliseconds (for retry delays).
+ * @param ms - Delay in milliseconds.
+ */
+export function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export interface ResponseContext {
-	status: number
-	statusText: string
-	ok: boolean
-}
-
 /**
- * Request interceptor type. Can modify the request or throw to abort.
+ * Compute delay for retry attempt with optional jitter.
+ * @param attempt - Zero-based attempt number.
+ * @param baseDelayMs - Base delay in ms.
+ * @param backoff - 'linear' or 'exponential'.
+ * @param jitter - Add random jitter (0-20% of delay).
  */
-export type RequestInterceptor = (
-	ctx: RequestContext
-) => RequestContext | Promise<RequestContext>
-
-/**
- * Response interceptor type. Can modify response, retry, or throw.
- */
-export type ResponseInterceptor = (
-	req: RequestContext,
-	res: ResponseContext
-) => ResponseContext | Promise<ResponseContext>
-
-/**
- * Build a simple retry policy: retry on 5xx or network errors.
- * @param maxRetries - Maximum number of retries.
- * @param delayMs - Delay between retries in milliseconds.
- */
-export function createRetryInterceptor(
-	maxRetries: number,
-	delayMs: number
-): ResponseInterceptor {
-	return async (req, res) => {
-		let lastRes = res
-		for (let attempt = 0; attempt < maxRetries; attempt++) {
-			if (lastRes.ok || (lastRes.status >= 400 && lastRes.status < 500)) {
-				return lastRes
-			}
-			await new Promise((r) => setTimeout(r, delayMs))
-			// Caller would re-execute request; here we only return context.
-			lastRes = { ...lastRes }
-		}
-		return lastRes
+export function getRetryDelayMs(
+	attempt: number,
+	baseDelayMs: number,
+	backoff: 'linear' | 'exponential',
+	jitter = true
+): number {
+	const multiplier =
+		backoff === 'exponential' ? Math.pow(2, attempt) : attempt + 1
+	let delay = baseDelayMs * multiplier
+	if (jitter) {
+		const jitterRange = delay * 0.2
+		delay += Math.random() * jitterRange - jitterRange / 2
+		delay = Math.max(0, delay)
 	}
+	return Math.round(delay)
 }
 
 /**
- * No-op request interceptor for logging placeholder.
- * Replace with actual logger in integration.
+ * Whether the request method is allowed to be retried (idempotent by default).
  */
-export function createLoggingInterceptor(
-	log: (msg: string, meta?: Record<string, unknown>) => void
-): RequestInterceptor {
-	return (ctx) => {
-		log('HTTP request', { url: ctx.url, method: ctx.method })
-		return ctx
+export function isRetryableMethod(
+	method: string,
+	allowedMethods: string[]
+): boolean {
+	return allowedMethods.includes(method.toUpperCase())
+}
+
+/**
+ * Whether the response status should trigger a retry.
+ */
+export function isRetryableStatus(
+	status: number,
+	retryStatusCodes: number[]
+): boolean {
+	return retryStatusCodes.includes(status)
+}
+
+/**
+ * Log request (method, url, headers, body) when logLevel is debug.
+ */
+export function logRequest(
+	logLevel: HttpClientConfig['logLevel'],
+	opts: {
+		method: string
+		url: string
+		headers: HeadersInit
+		body?: BodyInit | null
 	}
+): void {
+	if (logLevel !== 'debug') return
+	const { method, url, headers, body } = opts
+	const headerObj =
+		headers instanceof Headers
+			? Object.fromEntries(headers.entries())
+			: Array.isArray(headers)
+				? Object.fromEntries(headers)
+				: (headers as Record<string, string>)
+	console.debug(`${LOG_PREFIX} Request`, {
+		method,
+		url,
+		headers: headerObj,
+		...(body != null && { body: String(body).slice(0, 200) }),
+	})
+}
+
+/**
+ * Log response (status, duration, data truncated) when logLevel is debug.
+ */
+export function logResponse(
+	logLevel: HttpClientConfig['logLevel'],
+	opts: {
+		status: number
+		statusText: string
+		durationMs: number
+		dataPreview?: string
+	}
+): void {
+	if (logLevel !== 'debug') return
+	console.debug(`${LOG_PREFIX} Response`, {
+		status: opts.status,
+		statusText: opts.statusText,
+		durationMs: opts.durationMs,
+		...(opts.dataPreview != null && { dataPreview: opts.dataPreview }),
+	})
+}
+
+/**
+ * Log retry attempt (attempt number, delay, reason).
+ */
+export function logRetry(
+	logLevel: HttpClientConfig['logLevel'],
+	opts: { attempt: number; delayMs: number; reason: string }
+): void {
+	if (logLevel !== 'debug' && logLevel !== 'info') return
+	const msg = `${LOG_PREFIX} Retry #${opts.attempt} in ${opts.delayMs}ms: ${opts.reason}`
+	if (logLevel === 'debug') console.debug(msg)
+	else console.info(msg)
+}
+
+/**
+ * Log error (message, status, request).
+ */
+export function logError(
+	logLevel: HttpClientConfig['logLevel'],
+	opts: { message: string; status?: number; url?: string }
+): void {
+	if (logLevel === 'none') return
+	console.error(`${LOG_PREFIX} ${opts.message}`, {
+		...(opts.status != null && { status: opts.status }),
+		...(opts.url != null && { url: opts.url }),
+	})
 }
