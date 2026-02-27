@@ -18,7 +18,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "publish-branch": "develop|main",
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "pnpm build",
