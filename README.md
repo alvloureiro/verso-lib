@@ -92,7 +92,9 @@ Releases are automated via GitHub Actions. To publish a new version:
    ```
    Or in one go after `pnpm version patch`: `git push && git push --tags`
 
-The workflow runs on every push to `develop` and `main` (lint, test, build). When you push a tag matching `v*` (e.g. `v1.0.1`), it runs the same checks and then publishes to npm. With GitFlow, merge to `main` when the version is stable, then create and push the tag from `main`. Ensure the `NPM_TOKEN` secret is set in the repository (Settings → Secrets and variables → Actions) with a valid npm access token.
+The workflow runs on every push to `develop` and `main` (lint, test, build). When you push a tag matching `v*` (e.g. `v1.0.1`), it runs the same checks and then publishes to npm. With GitFlow, merge to `main` when the version is stable, then create and push the tag from `main`.
+
+**Publishing uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers)** (OIDC)—no long-lived token or 2FA bypass. One-time setup on npm: open your package → **Settings** → **Trusted publishing** → choose **GitHub Actions** and set **Workflow filename** to `publish.yml`. The workflow filename must match exactly. If the package does not exist yet, do the first publish manually (e.g. `pnpm publish` from your machine), then add the trusted publisher for future CI publishes.
 
 ## Configuration
 
