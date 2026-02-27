@@ -92,7 +92,7 @@ Releases are automated via GitHub Actions. To publish a new version:
    ```
    Or in one go after `pnpm version patch`: `git push && git push --tags`
 
-The workflow runs on every push to `main` (lint, test, build). When you push a tag matching `v*` (e.g. `v1.0.1`), it runs the same checks and then publishes to npm. Ensure the `NPM_TOKEN` secret is set in the repository (Settings → Secrets and variables → Actions) with a valid npm access token.
+The workflow runs on every push to `develop` and `main` (lint, test, build). When you push a tag matching `v*` (e.g. `v1.0.1`), it runs the same checks and then publishes to npm. With GitFlow, merge to `main` when the version is stable, then create and push the tag from `main`. Ensure the `NPM_TOKEN` secret is set in the repository (Settings → Secrets and variables → Actions) with a valid npm access token.
 
 ## Configuration
 
