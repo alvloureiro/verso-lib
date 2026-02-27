@@ -81,13 +81,23 @@ verso-lib/
 
 ## Releasing
 
-Releases are automated via GitHub Actions. **With GitFlow:** merge `develop` → `main` when the version is stable, then from `main` run:
+Releases are automated via GitHub Actions. **With GitFlow**, from your machine:
 
-```bash
-pnpm release patch   # 1.0.0 → 1.0.1 (or release:minor / release:major)
-```
+1. **Commit and push** everything on `develop`.
+2. **Update `main` with `develop` (rebase for linear history)** and run the release script:
+   ```bash
+   git checkout main
+   git pull origin main
+   git rebase develop
+   pnpm release patch   # or release:minor / release:major
+   git push origin main && git push origin --tags
+   ```
+   To use **merge** instead of rebase: `git merge develop -m "chore: merge develop into main for release"` before `pnpm release patch`.
+3. **Optional:** sync `develop` with the release:  
+   `git checkout develop && git merge main && git push origin develop`
 
-This script bumps the version, commits, creates the tag `vX.Y.Z`, and pushes branch + tag. CI then runs and publishes to npm.
+The release script bumps the version, commits, and creates the tag. CI runs on the tag push and publishes to npm.  
+**Note:** If `main` was already pushed with a different history, `git rebase develop` rewrites `main`; you may need `git push --force-with-lease origin main` (use only if you are sure no one else is pushing to `main`).
 
 **Manual alternative:** `pnpm version patch` then `git push && git push --tags`.
 
