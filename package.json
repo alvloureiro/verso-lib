@@ -1,6 +1,6 @@
 {
   "name": "verso-lib",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Shared TypeScript library for web and mobile (React/React Native)",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
