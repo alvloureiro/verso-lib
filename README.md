@@ -75,6 +75,25 @@ verso-lib/
 | `pnpm format`   | Format code with Prettier                        |
 | `pnpm format:check` | Check formatting with Prettier               |
 
+## Releasing
+
+Releases are automated via GitHub Actions. To publish a new version:
+
+1. **Update the version** in `package.json` (or use pnpm to bump it):
+   ```bash
+   pnpm version patch   # 1.0.0 → 1.0.1
+   pnpm version minor   # 1.0.0 → 1.1.0
+   pnpm version major   # 1.0.0 → 2.0.0
+   ```
+2. **Push the version commit and create a tag**:
+   ```bash
+   git push origin main
+   git push origin v1.0.1
+   ```
+   Or in one go after `pnpm version patch`: `git push && git push --tags`
+
+The workflow runs on every push to `main` (lint, test, build). When you push a tag matching `v*` (e.g. `v1.0.1`), it runs the same checks and then publishes to npm. Ensure the `NPM_TOKEN` secret is set in the repository (Settings → Secrets and variables → Actions) with a valid npm access token.
+
 ## Configuration
 
 - **TypeScript:** `tsconfig.json` — module `ES2020`, target `ES2018`, declarations enabled.

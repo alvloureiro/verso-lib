@@ -15,8 +15,12 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
+    "prepublishOnly": "pnpm build",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
