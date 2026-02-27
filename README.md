@@ -1,5 +1,9 @@
 # verso-lib
 
+[![npm version](https://img.shields.io/npm/v/verso-lib.svg)](https://www.npmjs.com/package/verso-lib)
+
+**Package:** [verso-lib on npm](https://www.npmjs.com/package/verso-lib)
+
 ## Objective
 Build a TypeScript library that abstracts access to map APIs (Google Maps, Mapbox, etc.), providing geocoding, distance matrix, and routing functionalities. The library will be consumed by web applications (React, Vue, Angular) and mobile apps (React Native), sharing 100% of the logic.
 
@@ -77,22 +81,17 @@ verso-lib/
 
 ## Releasing
 
-Releases are automated via GitHub Actions. To publish a new version:
+Releases are automated via GitHub Actions. **With GitFlow:** merge `develop` → `main` when the version is stable, then from `main` run:
 
-1. **Update the version** in `package.json` (or use pnpm to bump it):
-   ```bash
-   pnpm version patch   # 1.0.0 → 1.0.1
-   pnpm version minor   # 1.0.0 → 1.1.0
-   pnpm version major   # 1.0.0 → 2.0.0
-   ```
-2. **Push the version commit and create a tag**:
-   ```bash
-   git push origin main
-   git push origin v1.0.1
-   ```
-   Or in one go after `pnpm version patch`: `git push && git push --tags`
+```bash
+pnpm release patch   # 1.0.0 → 1.0.1 (or release:minor / release:major)
+```
 
-The workflow runs on every push to `develop` and `main` (lint, test, build). When you push a tag matching `v*` (e.g. `v1.0.1`), it runs the same checks and then publishes to npm. With GitFlow, merge to `main` when the version is stable, then create and push the tag from `main`.
+This script bumps the version, commits, creates the tag `vX.Y.Z`, and pushes branch + tag. CI then runs and publishes to npm.
+
+**Manual alternative:** `pnpm version patch` then `git push && git push --tags`.
+
+The workflow runs on every push to `develop` and `main` (lint, test, build). When you push a tag matching `v*`, it runs the same checks and then publishes to npm.
 
 **Publishing uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers)** (OIDC)—no long-lived token or 2FA bypass. One-time setup on npm: open your package → **Settings** → **Trusted publishing** → choose **GitHub Actions** and set **Workflow filename** to `publish.yml`. The workflow filename must match exactly. If the package does not exist yet, do the first publish manually (e.g. `pnpm publish` from your machine), then add the trusted publisher for future CI publishes.
 
