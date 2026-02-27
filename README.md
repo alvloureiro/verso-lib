@@ -93,7 +93,15 @@ This script bumps the version, commits, creates the tag `vX.Y.Z`, and pushes bra
 
 The workflow runs on every push to `develop` and `main` (lint, test, build). When you push a tag matching `v*`, it runs the same checks and then publishes to npm.
 
-**Publishing uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers)** (OIDC)—no long-lived token or 2FA bypass. One-time setup on npm: open your package → **Settings** → **Trusted publishing** → choose **GitHub Actions** and set **Workflow filename** to `publish.yml`. The workflow filename must match exactly. If the package does not exist yet, do the first publish manually (e.g. `pnpm publish` from your machine), then add the trusted publisher for future CI publishes.
+**Publishing uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers)** (OIDC)—no long-lived token or 2FA bypass.
+
+**One-time setup (do once per package):**
+
+1. Go to [npmjs.com](https://www.npmjs.com/) → **Packages** → **verso-lib** → **Settings**.
+2. Open **Trusted publishing**.
+3. Click **GitHub Actions**.
+4. Set **Workflow filename** to exactly: `publish.yml`.
+5. Save. After that, pushing a `v*` tag will publish from CI with no token.
 
 ## Configuration
 
