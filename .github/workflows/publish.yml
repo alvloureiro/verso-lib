@@ -61,7 +61,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'  # Node 22.14+ required for npm Trusted Publishing
+          # Node 24 ships with npm 11+ required for Trusted Publishing (OIDC)
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org/'
           cache: 'pnpm'
 
@@ -73,5 +74,5 @@ jobs:
 
       - name: Publish to npm
         run: pnpm publish --no-git-checks
-        # Uses Trusted Publishing (OIDC); no NPM_TOKEN needed.
-        # Configure the workflow in npm: Package → Settings → Trusted publishing.
+        # Trusted Publishing (OIDC) requires npm 11.5.1+ (Node 24 has it).
+        # One-time: npm → Package → Settings → Trusted publishing → workflow: publish.yml
