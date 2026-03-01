@@ -16,13 +16,8 @@ import type {
 	DistanceMatrixResponse,
 	RouteResult,
 } from '../../core/types'
-import type { Cache } from '../../core/cache.interface'
 import { HttpClient } from '../../http/http-client'
 import { HttpError } from '../../http/types'
-import { generateGeocodeCacheKey } from '../../utils/cache-keys'
-
-/** Default TTL for geocode cache: 7 days (in seconds). */
-const DEFAULT_GEOCODE_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 
 /** Response shape from Google Geocoding API (geocode/json). */
 interface GoogleGeocodeResponse {
@@ -48,28 +43,18 @@ interface GoogleGeocodeResponse {
 }
 
 /**
- * Google Maps provider. Used by createMapClient when provider is 'google'.
+ * Google Maps provider. Used by createProvider/createMapClient when provider is 'google'.
+ * Does not cache; use GeocodingService for caching.
  */
 export class GoogleMapsProvider implements MapProvider {
 	private readonly apiKey: string
-	/** Exposed for testing cache injection. */
-	public readonly cache: Cache
 	private readonly httpClient: HttpClient
-	private readonly geocodeCacheTtlSeconds: number | undefined
 
 	constructor(
 		apiKey: string,
-		cache: Cache,
-		httpConfig?: {
-			timeout?: number
-			retries?: number
-			/** Override default geocode cache TTL (seconds). */
-			geocodeCacheTtlSeconds?: number
-		}
+		httpConfig?: { timeout?: number; retries?: number }
 	) {
 		this.apiKey = apiKey
-		this.cache = cache
-		this.geocodeCacheTtlSeconds = httpConfig?.geocodeCacheTtlSeconds
 		this.httpClient = new HttpClient({
 			baseURL: 'https://maps.googleapis.com/maps/api',
 			timeout: httpConfig?.timeout,
@@ -81,13 +66,6 @@ export class GoogleMapsProvider implements MapProvider {
 		address: string,
 		options?: GeocodeOptions
 	): Promise<GeocodeResult[]> {
-		const cacheKey = generateGeocodeCacheKey(address, options)
-		const skipCache = options?.skipCache === true
-		if (!skipCache) {
-			const cached = await this.cache.get<GeocodeResult[]>(cacheKey)
-			if (cached != null) return cached
-		}
-
 		const params: Record<string, string> = {
 			address: address,
 			key: this.apiKey,
@@ -111,13 +89,7 @@ export class GoogleMapsProvider implements MapProvider {
 				method: 'GET',
 				params,
 			})
-			const results = this.parseGeocodeResponse(response)
-			if (!skipCache) {
-				const ttlSeconds =
-					this.geocodeCacheTtlSeconds ?? DEFAULT_GEOCODE_CACHE_TTL_SECONDS
-				await this.cache.set(cacheKey, results, ttlSeconds)
-			}
-			return results
+			return this.parseGeocodeResponse(response)
 		} catch (err) {
 			// Some proxies or routes may return 404 for missing resource; treat as no results.
 			if (err instanceof HttpError && err.status === 404) {

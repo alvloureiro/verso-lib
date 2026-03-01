@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createMapClient } from '../../../src/providers'
 import { GoogleMapsProvider } from '../../../src/providers/google'
-import { NoopCache } from '../../../src/cache/noop.cache'
 import type { MapProvider } from '../../../src/core/provider.interface'
 
 describe('createMapClient', () => {
@@ -23,24 +22,6 @@ describe('createMapClient', () => {
 		expect(typeof provider.reverseGeocode).toBe('function')
 		expect(typeof provider.getDistanceMatrix).toBe('function')
 		expect(typeof provider.getRoute).toBe('function')
-	})
-
-	it('uses NoopCache when no cache is provided', () => {
-		const client = createMapClient({
-			provider: 'google',
-			apiKey: 'test-key',
-		}) as GoogleMapsProvider
-		expect(client.cache).toBeInstanceOf(NoopCache)
-	})
-
-	it('uses the provided cache when cache is passed', () => {
-		const customCache = new NoopCache()
-		const client = createMapClient({
-			provider: 'google',
-			apiKey: 'test-key',
-			cache: customCache,
-		}) as GoogleMapsProvider
-		expect(client.cache).toBe(customCache)
 	})
 
 	it('accepts httpConfig without throwing', () => {

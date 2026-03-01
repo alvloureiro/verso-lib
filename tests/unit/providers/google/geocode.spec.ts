@@ -1,17 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GoogleMapsProvider } from '../../../../src/providers/google'
-import { MemoryCache } from '../../../../src/cache/memory.cache'
 
 describe('GoogleMapsProvider - geocode', () => {
 	let provider: GoogleMapsProvider
 	let mockRequest: ReturnType<typeof vi.fn>
-	let cache: MemoryCache
 
 	beforeEach(() => {
-		cache = new MemoryCache()
-		provider = new GoogleMapsProvider('fake-api-key', cache, {
-			timeout: 5000,
-		})
+		provider = new GoogleMapsProvider('fake-api-key', { timeout: 5000 })
 		const httpClient = (provider as { httpClient: { request: typeof vi.fn } })
 			.httpClient
 		mockRequest = vi.fn()
@@ -121,29 +116,6 @@ describe('GoogleMapsProvider - geocode', () => {
 
 		const results = await provider.geocode('Invalid Address 12345')
 		expect(results).toEqual([])
-	})
-
-	it('should cache results for subsequent identical requests', async () => {
-		const mockResponse = {
-			status: 'OK',
-			results: [
-				{
-					formatted_address: 'Test Address',
-					geometry: { location: { lat: 1, lng: 2 } },
-					place_id: 'test123',
-					address_components: [],
-				},
-			],
-		}
-
-		mockRequest.mockResolvedValue(mockResponse)
-
-		const results1 = await provider.geocode('Same Address')
-		expect(mockRequest).toHaveBeenCalledTimes(1)
-
-		const results2 = await provider.geocode('Same Address')
-		expect(mockRequest).toHaveBeenCalledTimes(1)
-		expect(results1).toEqual(results2)
 	})
 
 	it('should respect region and language options', async () => {
@@ -279,41 +251,4 @@ describe('GoogleMapsProvider - geocode', () => {
 		)
 	})
 
-	it('should bypass cache when options.skipCache is true', async () => {
-		mockRequest.mockResolvedValue({
-			status: 'OK',
-			results: [
-				{
-					formatted_address: 'Fresh',
-					geometry: { location: { lat: 1, lng: 2 } },
-					place_id: 'p1',
-					address_components: [],
-				},
-			],
-		})
-
-		await provider.geocode('Same', { skipCache: true })
-		await provider.geocode('Same', { skipCache: true })
-		expect(mockRequest).toHaveBeenCalledTimes(2)
-	})
-
-	it('should use same cache key for same options with different key order', async () => {
-		mockRequest.mockResolvedValue({
-			status: 'OK',
-			results: [
-				{
-					formatted_address: 'Rua X',
-					geometry: { location: { lat: 0, lng: 0 } },
-					place_id: 'p1',
-					address_components: [],
-				},
-			],
-		})
-
-		await provider.geocode('Rua X', { language: 'pt-BR', region: 'br' })
-		expect(mockRequest).toHaveBeenCalledTimes(1)
-
-		await provider.geocode('Rua X', { region: 'br', language: 'pt-BR' })
-		expect(mockRequest).toHaveBeenCalledTimes(1)
-	})
 })

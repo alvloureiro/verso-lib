@@ -133,25 +133,34 @@ Types are resolved via the `types` field in `package.json`.
 
 ### Geocoding
 
-Use `createProvider({ provider: 'google', apiKey, cache?, httpConfig? })` to get a full Google Maps provider (geocoding with caching and HTTP retry). For `'mapbox'` a stub is returned until that provider is implemented.
+Use `createProvider({ provider: 'google', apiKey, httpConfig? })` to get a Google Maps provider (geocoding with HTTP retry). Providers do not cache; use **GeocodingService** for caching (option-aware keys, single policy). For `'mapbox'` a stub is returned until that provider is implemented.
 
-Example with cache:
+Example without cache:
 
 ```ts
-import { createProvider, MemoryCache } from 'verso-lib'
+import { createProvider } from 'verso-lib'
 
-const cache = new MemoryCache()
 const provider = createProvider({
   provider: 'google',
   apiKey: process.env.GOOGLE_MAPS_API_KEY!,
-  cache,
 })
 const results = await provider.geocode('Av. Paulista, 1000, São Paulo')
-// results[0].coordinates, results[0].address, etc.
 ```
 
-Same with the convenience alias: `createMapClient({ provider: 'google', apiKey, cache })`.
+Example with cache (GeocodingService):
 
-To force a fresh result (bypass cache), pass `skipCache: true` in options: `provider.geocode('Address', { skipCache: true })`.
+```ts
+import { createProvider, GeocodingService, MemoryCache } from 'verso-lib'
+
+const provider = createProvider({ provider: 'google', apiKey: process.env.GOOGLE_MAPS_API_KEY! })
+const service = new GeocodingService({
+  provider,
+  cache: new MemoryCache(),
+  cacheTtlSeconds: 7 * 24 * 60 * 60,
+})
+const results = await service.geocode('Av. Paulista, 1000, São Paulo', { region: 'br' })
+```
+
+To force a fresh result (bypass cache), pass `skipCache: true`: `service.geocode('Address', { skipCache: true })`.
 
 **Note:** Respect provider rate limits (e.g. Google Geocoding API quotas). Use throttling or a queue in high-throughput scenarios.

@@ -31,7 +31,7 @@ describe('GeocodingService', () => {
 		const service = new GeocodingService({ provider: mockProvider })
 		const out = await service.geocode('Some Address')
 
-		expect(mockGeocode).toHaveBeenCalledWith('Some Address')
+		expect(mockGeocode).toHaveBeenCalledWith('Some Address', undefined)
 		expect(out).toEqual(results)
 	})
 
@@ -80,6 +80,38 @@ describe('GeocodingService', () => {
 
 		await service.geocode('A')
 		await service.geocode('A')
+		expect(mockGeocode).toHaveBeenCalledTimes(2)
+	})
+
+	it('uses option-aware cache key (same address, different options = two provider calls)', async () => {
+		const cache = new MemoryCache()
+		mockGeocode.mockResolvedValue([{ coordinates: { lat: 0, lng: 0 }, address: { formattedAddress: 'X' }, placeId: 'p1' }])
+
+		const service = new GeocodingService({
+			provider: mockProvider,
+			cache,
+			cacheTtlSeconds: 3600,
+		})
+
+		await service.geocode('Rua X', { region: 'br' })
+		await service.geocode('Rua X', { region: 'us' })
+		expect(mockGeocode).toHaveBeenCalledTimes(2)
+		expect(mockGeocode).toHaveBeenNthCalledWith(1, 'Rua X', { region: 'br' })
+		expect(mockGeocode).toHaveBeenNthCalledWith(2, 'Rua X', { region: 'us' })
+	})
+
+	it('skips cache when options.skipCache is true', async () => {
+		const cache = new MemoryCache()
+		mockGeocode.mockResolvedValue([{ coordinates: { lat: 0, lng: 0 }, address: { formattedAddress: 'X' }, placeId: 'p1' }])
+
+		const service = new GeocodingService({
+			provider: mockProvider,
+			cache,
+			cacheTtlSeconds: 3600,
+		})
+
+		await service.geocode('Same', { skipCache: true })
+		await service.geocode('Same', { skipCache: true })
 		expect(mockGeocode).toHaveBeenCalledTimes(2)
 	})
 })
