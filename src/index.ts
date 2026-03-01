@@ -14,6 +14,7 @@ export type {
 	DistanceMatrixResponse,
 	RouteStep,
 	RouteResult,
+	PlacePrediction,
 } from './core/types'
 export type { Cache } from './core/cache.interface'
 export type {
@@ -22,6 +23,7 @@ export type {
 	ReverseGeocodeOptions,
 	DistanceMatrixOptions,
 	RouteOptions,
+	AutocompleteOptions,
 } from './core/provider.interface'
 
 // Provider factory and implementations

@@ -100,6 +100,24 @@ export interface RouteStep {
 }
 
 /**
+ * A place prediction returned by the autocomplete service.
+ */
+export interface PlacePrediction {
+	/** The human‑readable description of the place (e.g., "Av. Paulista, 1000 - São Paulo") */
+	description: string
+	/** The place ID that can be used later to get place details or for geocoding */
+	placeId: string
+	/** (Optional) An array of matched substrings in the description for highlighting */
+	matchedSubstrings?: Array<{ length: number; offset: number }>
+	/** (Optional) The structured formatting of the description */
+	structuredFormatting?: {
+		mainText: string
+		mainTextMatchedSubstrings: Array<{ length: number; offset: number }>
+		secondaryText: string
+	}
+}
+
+/**
  * Complete route result
  */
 export interface RouteResult {

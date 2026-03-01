@@ -13,6 +13,7 @@ import type {
 	ReverseGeocodeOptions,
 	DistanceMatrixOptions,
 	RouteOptions,
+	AutocompleteOptions,
 	MapProvider,
 } from '../../core/provider.interface'
 import type {
@@ -20,6 +21,7 @@ import type {
 	ReverseGeocodeResult,
 	DistanceMatrixResponse,
 	RouteResult,
+	PlacePrediction,
 	LatLng,
 	Bounds,
 } from '../../core/types'
@@ -70,6 +72,15 @@ export class MapboxProvider implements MapProvider {
 			address: { formattedAddress: '' },
 			coordinates: { lat, lng },
 		}
+	}
+
+	async autocomplete(
+		input: string,
+		options?: AutocompleteOptions
+	): Promise<PlacePrediction[]> {
+		void input
+		void options
+		return []
 	}
 
 	async getDistanceMatrix(

@@ -9,6 +9,7 @@ import type {
 	ReverseGeocodeResult,
 	DistanceMatrixResponse,
 	RouteResult,
+	PlacePrediction,
 } from './types'
 
 /**
@@ -56,6 +57,24 @@ export interface RouteOptions {
 	alternatives?: boolean // Request alternative routes
 	language?: string
 	avoid?: ('tolls' | 'highways' | 'ferries')[]
+}
+
+/**
+ * Options for place autocomplete requests
+ */
+export interface AutocompleteOptions {
+	/** The language in which to return results (e.g., 'pt-BR') */
+	language?: string
+	/** The country code(s) to bias results (e.g., 'br' for Brazil) */
+	components?: { country: string | string[] }
+	/** The location (latitude, longitude) around which to bias results */
+	location?: LatLng
+	/** The radius (in meters) around the location to bias results */
+	radius?: number
+	/** Whether to restrict results to a specific type (e.g., 'address') */
+	types?: string
+	/** A session token to group autocomplete and place details requests for billing */
+	sessionToken?: string
 }
 
 /**
@@ -110,4 +129,15 @@ export interface MapProvider {
 		waypoints?: LatLng[],
 		options?: RouteOptions
 	): Promise<RouteResult>
+
+	/**
+	 * Get place suggestions (autocomplete) for a partial address input.
+	 * @param input - Partial input string (e.g., "Av. Paulista")
+	 * @param options - Optional language, components, location, radius, types, sessionToken
+	 * @returns Array of place predictions with description and placeId
+	 */
+	autocomplete(
+		input: string,
+		options?: AutocompleteOptions
+	): Promise<PlacePrediction[]>
 }

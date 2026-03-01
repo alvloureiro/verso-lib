@@ -9,6 +9,7 @@ import type {
 	ReverseGeocodeOptions,
 	DistanceMatrixOptions,
 	RouteOptions,
+	AutocompleteOptions,
 } from '../../core/provider.interface'
 import type {
 	LatLng,
@@ -17,6 +18,7 @@ import type {
 	ReverseGeocodeResult,
 	DistanceMatrixResponse,
 	RouteResult,
+	PlacePrediction,
 } from '../../core/types'
 import { HttpClient } from '../../http/http-client'
 import { HttpError } from '../../http/types'
@@ -40,6 +42,22 @@ interface GoogleGeocodeResponse {
 			types: string[]
 		}>
 		partial_match?: boolean
+	}>
+	error_message?: string
+}
+
+/** Response shape from Google Places Autocomplete API (place/autocomplete/json). */
+interface GoogleAutocompleteResponse {
+	status: string
+	predictions: Array<{
+		description: string
+		place_id: string
+		matched_substrings?: Array<{ length: number; offset: number }>
+		structured_formatting?: {
+			main_text: string
+			main_text_matched_substrings?: Array<{ length: number; offset: number }>
+			secondary_text: string
+		}
 	}>
 	error_message?: string
 }
@@ -340,6 +358,84 @@ export class GoogleMapsProvider implements MapProvider {
 			placeId: first.place_id,
 			locationType: first.geometry?.location_type,
 		}
+	}
+
+	/**
+	 * Get place suggestions (autocomplete) for a partial address input.
+	 * Uses Google Places Autocomplete API. Returns empty array on empty input
+	 * or on API/network errors (no exceptions thrown).
+	 *
+	 * @param input - Partial input string (e.g., "Av. Paulista")
+	 * @param options - Optional language, components, location, radius, types, sessionToken
+	 * @returns Array of place predictions with description and placeId
+	 */
+	async autocomplete(
+		input: string,
+		options?: AutocompleteOptions
+	): Promise<PlacePrediction[]> {
+		if (!input || input.trim().length === 0) {
+			return []
+		}
+
+		const params: Record<string, string> = {
+			input: input.trim(),
+			key: this.apiKey,
+		}
+		if (options?.language) params.language = options.language
+		if (options?.sessionToken) params.sessiontoken = options.sessionToken
+		if (options?.types) params.types = options.types
+		if (options?.radius != null) params.radius = String(options.radius)
+		if (options?.location) {
+			params.location = `${options.location.lat},${options.location.lng}`
+		}
+		if (options?.components?.country) {
+			const countries = Array.isArray(options.components.country)
+				? options.components.country.join('|')
+				: options.components.country
+			params.components = `country:${countries}`
+		}
+
+		try {
+			const response =
+				await this.httpClient.request<GoogleAutocompleteResponse>({
+					url: '/place/autocomplete/json',
+					method: 'GET',
+					params,
+				})
+			return this.parseAutocompleteResponse(response)
+		} catch (error) {
+			console.error('Autocomplete API error:', error)
+			return []
+		}
+	}
+
+	private parseAutocompleteResponse(
+		response: GoogleAutocompleteResponse
+	): PlacePrediction[] {
+		if (response.status !== 'OK' && response.status !== 'ZERO_RESULTS') {
+			console.warn(
+				`Autocomplete API returned status: ${response.status}`,
+				response.error_message
+			)
+			return []
+		}
+		if (!response.predictions || response.predictions.length === 0) {
+			return []
+		}
+		return response.predictions.map((prediction) => ({
+			description: prediction.description,
+			placeId: prediction.place_id,
+			matchedSubstrings: prediction.matched_substrings,
+			structuredFormatting: prediction.structured_formatting
+				? {
+						mainText: prediction.structured_formatting.main_text,
+						mainTextMatchedSubstrings:
+							prediction.structured_formatting.main_text_matched_substrings ??
+							[],
+						secondaryText: prediction.structured_formatting.secondary_text,
+					}
+				: undefined,
+		}))
 	}
 
 	async getDistanceMatrix(

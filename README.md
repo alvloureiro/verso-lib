@@ -166,3 +166,20 @@ const results = await service.geocode('Av. Paulista, 1000, São Paulo', { region
 To force a fresh result (bypass cache), pass `skipCache: true`: `service.geocode('Address', { skipCache: true })`.
 
 **Note:** Respect provider rate limits (e.g. Google Geocoding API quotas). Use throttling or a queue in high-throughput scenarios.
+
+### Place Autocomplete (Address Normalization)
+
+Use **`provider.autocomplete(input, options?)`** to get place suggestions as the user types. The Google provider calls the Places Autocomplete API and returns an array of **PlacePrediction** objects (each with `description` and `placeId`). Use the `placeId` later for geocoding or place details.
+
+**Options:** `language`, `components` (e.g. `{ country: 'br' }` or `{ country: ['br', 'pt'] }`), `location`, `radius`, `types` (e.g. `'address'`), and **`sessionToken`** (recommended for per-session billing: generate on the client and pass through). On empty input or API/network errors, the method returns an empty array (no throw).
+
+```ts
+import { createProvider, type PlacePrediction, type AutocompleteOptions } from 'verso-lib'
+
+const provider = createProvider({ provider: 'google', apiKey: process.env.GOOGLE_MAPS_API_KEY! })
+const opts: AutocompleteOptions = { language: 'pt-BR', components: { country: 'br' }, sessionToken: 'client-generated-token' }
+const predictions: PlacePrediction[] = await provider.autocomplete('Av. Paulista', opts)
+// predictions[0].description, predictions[0].placeId
+```
+
+Mapbox provider stub returns `[]` for `autocomplete` until implemented.
