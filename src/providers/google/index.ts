@@ -43,8 +43,8 @@ interface GoogleGeocodeResponse {
 }
 
 /**
- * Google Maps provider. Used by createProvider/createMapClient when provider is 'google'.
- * Does not cache; use GeocodingService for caching.
+ * Google Maps provider. Used by createProvider/createMapClient
+ * when provider is 'google'. Does not cache; use GeocodingService for caching.
  */
 export class GoogleMapsProvider implements MapProvider {
 	private readonly apiKey: string
@@ -62,6 +62,14 @@ export class GoogleMapsProvider implements MapProvider {
 		})
 	}
 
+	/**
+	 * Geocode an address via Google Geocoding API. Does not use cache; use
+	 * GeocodingService for caching.
+	 *
+	 * @param address - Address string to geocode
+	 * @param options - Optional region, language, bounds, or components
+	 * @returns Resolved geocode results, or empty array on ZERO_RESULTS / 404
+	 */
 	async geocode(
 		address: string,
 		options?: GeocodeOptions
@@ -91,7 +99,7 @@ export class GoogleMapsProvider implements MapProvider {
 			})
 			return this.parseGeocodeResponse(response)
 		} catch (err) {
-			// Some proxies or routes may return 404 for missing resource; treat as no results.
+			// Some proxies/routes return 404 for missing resource; treat as no results.
 			if (err instanceof HttpError && err.status === 404) {
 				return []
 			}
@@ -121,7 +129,8 @@ export class GoogleMapsProvider implements MapProvider {
 		const location = result.geometry?.location
 		if (!location || typeof result.place_id !== 'string') {
 			throw new Error(
-				'Geocoding API returned a malformed result (missing geometry.location or place_id)'
+				'Geocoding API returned a malformed result ' +
+					'(missing geometry.location or place_id)'
 			)
 		}
 		const addressComponents = this.extractAddressComponents(

@@ -233,7 +233,7 @@ describe('GoogleMapsProvider - geocode', () => {
 		})
 	})
 
-	it('should throw on malformed API response (missing geometry or place_id)', async () => {
+	it('should throw on malformed result (missing geometry or place_id)', async () => {
 		mockRequest.mockResolvedValue({
 			status: 'OK',
 			results: [
