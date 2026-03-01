@@ -6,6 +6,39 @@ import type { HttpClientConfig } from './types'
 
 const LOG_PREFIX = '[HttpClient]'
 
+/** Query param names that must be redacted from logs (case-insensitive). */
+const SENSITIVE_PARAM_NAMES = new Set([
+	'key',
+	'api_key',
+	'apikey',
+	'access_token',
+	'accesstoken',
+	'token',
+])
+
+/**
+ * Redact sensitive query parameters (e.g. API keys, tokens) from a URL.
+ * Used when logging request URLs so secrets are never written to logs.
+ * @param url - Full or relative URL
+ * @returns URL with sensitive param values replaced by '***'
+ */
+export function redactSensitiveParamsFromUrl(url: string): string {
+	try {
+		const parsed = url.startsWith('http')
+			? new URL(url)
+			: new URL(url, 'http://invalid.local')
+		for (const [name] of parsed.searchParams) {
+			if (SENSITIVE_PARAM_NAMES.has(name.toLowerCase())) {
+				parsed.searchParams.set(name, '***')
+			}
+		}
+		const redacted = parsed.toString()
+		return url.startsWith('http') ? redacted : parsed.pathname + parsed.search
+	} catch {
+		return url
+	}
+}
+
 /**
  * Sleep for a given number of milliseconds (for retry delays).
  * @param ms - Delay in milliseconds.
@@ -72,6 +105,7 @@ export function logRequest(
 ): void {
 	if (logLevel !== 'debug') return
 	const { method, url, headers, body } = opts
+	const safeUrl = redactSensitiveParamsFromUrl(url)
 	const headerObj =
 		headers instanceof Headers
 			? Object.fromEntries(headers.entries())
@@ -80,7 +114,7 @@ export function logRequest(
 				: (headers as Record<string, string>)
 	console.debug(`${LOG_PREFIX} Request`, {
 		method,
-		url,
+		url: safeUrl,
 		headers: headerObj,
 		...(body != null && { body: String(body).slice(0, 200) }),
 	})
@@ -128,8 +162,10 @@ export function logError(
 	opts: { message: string; status?: number; url?: string }
 ): void {
 	if (logLevel === 'none') return
+	const safeUrl =
+		opts.url != null ? redactSensitiveParamsFromUrl(opts.url) : undefined
 	console.error(`${LOG_PREFIX} ${opts.message}`, {
 		...(opts.status != null && { status: opts.status }),
-		...(opts.url != null && { url: opts.url }),
+		...(safeUrl != null && { url: safeUrl }),
 	})
 }

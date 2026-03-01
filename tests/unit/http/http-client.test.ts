@@ -209,6 +209,28 @@ describe('HttpClient', () => {
 			expect(calls.some((s) => s.includes('Response'))).toBe(true)
 			debugSpy.mockRestore()
 		})
+
+		it('redacts API key and sensitive params from logged URL', async () => {
+			const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+			vi.spyOn(global, 'fetch').mockResolvedValue(
+				mockResponse(200, 'OK', {})
+			)
+			const client = new HttpClient({
+				baseURL: 'https://maps.googleapis.com/maps/api',
+				logLevel: 'debug',
+			})
+			await client.request({
+				url: '/geocode/json',
+				params: {
+					address: 'Av. Paulista',
+					key: 'secret-api-key-12345',
+				},
+			})
+			const logged = JSON.stringify(debugSpy.mock.calls)
+			expect(logged).not.toContain('secret-api-key-12345')
+			expect(logged).toContain('***')
+			debugSpy.mockRestore()
+		})
 	})
 
 	describe('error handling', () => {
