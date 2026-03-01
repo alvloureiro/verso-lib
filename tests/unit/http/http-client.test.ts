@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { HttpClient } from '../../../src/http/http-client'
-import { HttpError } from '../../../src/http/types'
+import { HttpClient } from '@/http/http-client'
+import { HttpError } from '@/http/types'
 
 function mockResponse(
 	status: number,

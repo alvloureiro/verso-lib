@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { GeocodingService } from '../../../src/services/geocoding.service'
-import type { MapProvider } from '../../../src/core/provider.interface'
-import type { GeocodeResult } from '../../../src/core/types'
-import { MemoryCache } from '../../../src/cache/memory.cache'
+import { GeocodingService } from '@/services/geocoding.service'
+import type { MapProvider } from '@/core/provider.interface'
+import type { GeocodeResult } from '@/core/types'
+import { MemoryCache } from '@/cache/memory.cache'
 
 describe('GeocodingService', () => {
 	let mockProvider: MapProvider

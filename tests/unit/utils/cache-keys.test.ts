@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateCacheKey } from '../../../src/utils/cache-keys'
+import { generateCacheKey } from '@/utils/cache-keys'
 
 describe('generateCacheKey', () => {
 	it('produces same key for same options with different key order', () => {

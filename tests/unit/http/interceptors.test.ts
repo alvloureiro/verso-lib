@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { redactSensitiveParamsFromUrl } from '../../../src/http/interceptors'
+import { redactSensitiveParamsFromUrl } from '@/http/interceptors'
 
 describe('redactSensitiveParamsFromUrl', () => {
 	it('redacts key query parameter', () => {

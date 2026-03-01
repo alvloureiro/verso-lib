@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { createMapClient } from '../../../src/providers'
-import { GoogleMapsProvider } from '../../../src/providers/google'
-import type { MapProvider } from '../../../src/core/provider.interface'
+import { createMapClient } from '@/providers'
+import { GoogleMapsProvider } from '@/providers/google'
+import type { MapProvider } from '@/core/provider.interface'
 
 describe('createMapClient', () => {
 	it('returns an instance of GoogleMapsProvider when provider is "google"', () => {

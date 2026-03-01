@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createProvider } from '../../src/providers'
+import { createProvider } from '@/providers'
 
 describe('createProvider', () => {
 	it('creates Google provider with apiKey', () => {

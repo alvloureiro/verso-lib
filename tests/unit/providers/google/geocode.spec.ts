@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { GoogleMapsProvider } from '../../../../src/providers/google'
+import { GoogleMapsProvider } from '@/providers/google'
 
 describe('GoogleMapsProvider - geocode', () => {
 	let provider: GoogleMapsProvider
@@ -192,7 +192,7 @@ describe('GoogleMapsProvider - geocode', () => {
 	})
 
 	it('should return empty array on HTTP 404', async () => {
-		const { HttpError } = await import('../../../../src/http/types')
+		const { HttpError } = await import('@/http/types')
 		mockRequest.mockRejectedValue(
 			new HttpError('Not Found', {
 				status: 404,

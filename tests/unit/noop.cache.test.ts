@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { NoopCache } from '../../src/cache/noop.cache'
+import { NoopCache } from '@/cache/noop.cache'
 
 describe('NoopCache', () => {
 	it('get returns undefined', async () => {

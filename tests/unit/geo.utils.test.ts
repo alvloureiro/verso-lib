@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { haversineDistanceMeters } from '../../src/utils/geo.utils'
+import { haversineDistanceMeters } from '@/utils/geo.utils'
 
 describe('haversineDistanceMeters', () => {
 	it('returns 0 for same point', () => {
