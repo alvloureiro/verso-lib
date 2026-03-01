@@ -24,14 +24,9 @@ export type {
 } from './core/provider.interface'
 
 // Provider factory and implementations
-export {
-	createMapClient,
-	createProvider,
-	GoogleProvider,
-	MapboxProvider,
-} from './providers'
+export { createMapClient, createProvider, MapboxProvider } from './providers'
 export type { MapClientConfig, ProviderConfig } from './providers'
-export type { GoogleProviderConfig } from './providers/google/google-provider'
+export type { GoogleProviderConfig } from './providers/google/config'
 export type { MapboxProviderConfig } from './providers/mapbox/mapbox-provider'
 
 // Services

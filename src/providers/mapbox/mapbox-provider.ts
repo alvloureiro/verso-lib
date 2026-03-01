@@ -1,5 +1,11 @@
 /**
- * Mapbox API provider (stub). Implement with Geocoding, Matrix, Directions APIs.
+ * Mapbox API provider (stub only).
+ *
+ * This module is a placeholder for a future Mapbox implementation. All methods
+ * return stub data (e.g. geocode returns [], getRoute returns zeroed values).
+ * Do not use in production; it is exported so that createProvider('mapbox', …)
+ * returns a valid MapProvider and callers can write provider-agnostic code.
+ * A full implementation will replace this stub.
  */
 
 import type {
@@ -23,7 +29,11 @@ export interface MapboxProviderConfig {
 }
 
 /**
- * Mapbox provider. Stub implementation; wire to real APIs in integration.
+ * Mapbox provider (stub only).
+ *
+ * Placeholder for future Mapbox Geocoding, Matrix, and Directions APIs.
+ * geocode() returns []; other methods return empty or zeroed data.
+ * Not for production use until a real implementation is added.
  */
 export class MapboxProvider implements MapProvider {
 	private readonly accessToken: string

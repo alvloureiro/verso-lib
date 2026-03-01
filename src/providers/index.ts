@@ -4,7 +4,7 @@
 
 import type { MapProvider } from '../core/provider.interface'
 import { GoogleMapsProvider } from './google'
-import type { GoogleProviderConfig } from './google/google-provider'
+import type { GoogleProviderConfig } from './google/config'
 import { MapboxProvider } from './mapbox/mapbox-provider'
 import type { MapboxProviderConfig } from './mapbox/mapbox-provider'
 
@@ -75,5 +75,4 @@ export function createProvider(config: ProviderConfig): MapProvider {
 	)
 }
 
-export { GoogleProvider } from './google/google-provider'
 export { MapboxProvider } from './mapbox/mapbox-provider'

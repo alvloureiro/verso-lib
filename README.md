@@ -133,7 +133,9 @@ Types are resolved via the `types` field in `package.json`.
 
 ### Geocoding
 
-Use `createProvider({ provider: 'google', apiKey, httpConfig? })` to get a Google Maps provider (geocoding with HTTP retry). Providers do not cache; use **GeocodingService** for caching (option-aware keys, single policy). For `'mapbox'` a stub is returned until that provider is implemented.
+Use `createProvider({ provider: 'google', apiKey, httpConfig? })` to get a Google Maps provider (geocoding with HTTP retry). Providers do not cache; use **GeocodingService** for caching (option-aware keys, single policy).
+
+**Mapbox:** `createProvider({ provider: 'mapbox', ... })` returns **MapboxProvider**, which is a **stub only** (e.g. `geocode()` returns `[]`). It is kept so that provider-agnostic code and types work; do not use in production until a real Mapbox implementation is added.
 
 Example without cache:
 
