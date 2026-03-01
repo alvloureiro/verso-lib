@@ -4,6 +4,7 @@
 
 import type {
 	LatLng,
+	Bounds,
 	GeocodeResult,
 	ReverseGeocodeResult,
 	DistanceMatrixResponse,
@@ -14,8 +15,14 @@ import type {
  * Options for geocoding requests
  */
 export interface GeocodeOptions {
-	region?: string // Bias results to a region (e.g., 'br')
-	language?: string // Language for results
+	/** Country code bias (e.g. 'br' for Brazil). */
+	region?: string
+	/** Language for results (e.g. 'pt-BR'). */
+	language?: string
+	/** Bias viewport. */
+	bounds?: Bounds
+	/** Component filtering (e.g. { country: 'BR', postal_code: '01310-100' }). */
+	components?: Record<string, string>
 }
 
 /**

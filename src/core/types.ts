@@ -39,7 +39,10 @@ export interface Address {
 export interface GeocodeResult {
 	coordinates: LatLng
 	address: Address
+	placeId: string
 	bounds?: Bounds
+	/** Indicates if the provider returned a partial match. */
+	partialMatch?: boolean
 }
 
 /**
