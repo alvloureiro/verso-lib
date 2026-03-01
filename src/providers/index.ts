@@ -6,10 +6,15 @@ import type { Cache } from '../core/cache.interface'
 import type { MapProvider } from '../core/provider.interface'
 import { NoopCache } from '../cache/noop.cache'
 import { GoogleMapsProvider } from './google'
-import { GoogleProvider } from './google/google-provider'
 import type { GoogleProviderConfig } from './google/google-provider'
 import { MapboxProvider } from './mapbox/mapbox-provider'
 import type { MapboxProviderConfig } from './mapbox/mapbox-provider'
+
+/** Optional cache and HTTP config for createProvider (google). */
+interface CreateProviderGoogleOptions {
+	cache?: Cache
+	httpConfig?: { timeout?: number; retries?: number }
+}
 
 /** Configuration for createMapClient (provider, API key, optional cache and HTTP). */
 export interface MapClientConfig {
@@ -46,20 +51,22 @@ export function createMapClient(config: MapClientConfig): MapProvider {
 }
 
 export type ProviderConfig =
-	| ({ provider: 'google' } & GoogleProviderConfig)
+	| ({ provider: 'google' } & GoogleProviderConfig &
+			CreateProviderGoogleOptions)
 	| ({ provider: 'mapbox' } & MapboxProviderConfig)
 
 /**
  * Create a map provider instance by provider ID and config.
+ * For 'google', returns the full GoogleMapsProvider (geocoding with cache/HTTP).
+ * For 'mapbox', returns a stub until that provider is implemented.
+ *
  * @param config - Provider identifier and provider-specific options.
  * @returns MapProvider implementation.
  */
 export function createProvider(config: ProviderConfig): MapProvider {
 	if (config.provider === 'google') {
-		return new GoogleProvider({
-			apiKey: config.apiKey,
-			baseUrl: config.baseUrl,
-		})
+		const cache = config.cache ?? new NoopCache()
+		return new GoogleMapsProvider(config.apiKey, cache, config.httpConfig)
 	}
 	if (config.provider === 'mapbox') {
 		return new MapboxProvider({

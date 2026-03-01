@@ -105,6 +105,7 @@ export class GoogleMapsProvider implements MapProvider {
 			await this.cache.set(cacheKey, results, ttlSeconds)
 			return results
 		} catch (err) {
+			// Some proxies or routes may return 404 for missing resource; treat as no results.
 			if (err instanceof HttpError && err.status === 404) {
 				return []
 			}
@@ -139,13 +140,19 @@ export class GoogleMapsProvider implements MapProvider {
 	private mapGoogleResultToGeocodeResult(
 		result: NonNullable<GoogleGeocodeResponse['results']>[number]
 	): GeocodeResult {
+		const location = result.geometry?.location
+		if (!location || typeof result.place_id !== 'string') {
+			throw new Error(
+				'Geocoding API returned a malformed result (missing geometry.location or place_id)'
+			)
+		}
 		const addressComponents = this.extractAddressComponents(
 			result.address_components ?? []
 		)
 		return {
 			coordinates: {
-				lat: result.geometry.location.lat,
-				lng: result.geometry.location.lng,
+				lat: location.lat,
+				lng: location.lng,
 			},
 			address: {
 				formattedAddress: result.formatted_address,

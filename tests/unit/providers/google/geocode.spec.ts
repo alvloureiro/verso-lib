@@ -260,4 +260,42 @@ describe('GoogleMapsProvider - geocode', () => {
 			}),
 		})
 	})
+
+	it('should throw on malformed API response (missing geometry or place_id)', async () => {
+		mockRequest.mockResolvedValue({
+			status: 'OK',
+			results: [
+				{
+					formatted_address: 'Some Address',
+					geometry: {},
+					place_id: 'id123',
+					address_components: [],
+				},
+			],
+		})
+
+		await expect(provider.geocode('Address')).rejects.toThrow(
+			/malformed result.*geometry\.location or place_id/
+		)
+	})
+
+	it('should use same cache key for same options with different key order', async () => {
+		mockRequest.mockResolvedValue({
+			status: 'OK',
+			results: [
+				{
+					formatted_address: 'Rua X',
+					geometry: { location: { lat: 0, lng: 0 } },
+					place_id: 'p1',
+					address_components: [],
+				},
+			],
+		})
+
+		await provider.geocode('Rua X', { language: 'pt-BR', region: 'br' })
+		expect(mockRequest).toHaveBeenCalledTimes(1)
+
+		await provider.geocode('Rua X', { region: 'br', language: 'pt-BR' })
+		expect(mockRequest).toHaveBeenCalledTimes(1)
+	})
 })
