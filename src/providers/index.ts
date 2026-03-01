@@ -16,7 +16,10 @@ interface CreateProviderGoogleOptions {
 	httpConfig?: { timeout?: number; retries?: number }
 }
 
-/** Configuration for createMapClient (provider, API key, optional cache and HTTP). */
+/**
+ * Configuration for createMapClient.
+ * @deprecated Prefer createProvider for the long-term, provider-agnostic API.
+ */
 export interface MapClientConfig {
 	/** Provider identifier – initially only 'google'. */
 	provider: 'google'
@@ -33,8 +36,11 @@ export interface MapClientConfig {
 
 /**
  * Creates a map client instance based on the provided configuration.
+ * Convenience alias for Google-only usage; for new code prefer createProvider.
+ *
  * @param config - Client configuration
  * @returns An object implementing the MapProvider interface
+ * @deprecated Prefer createProvider for the long-term API.
  */
 export function createMapClient(config: MapClientConfig): MapProvider {
 	const cache = config.cache ?? new NoopCache()
@@ -57,8 +63,10 @@ export type ProviderConfig =
 
 /**
  * Create a map provider instance by provider ID and config.
- * For 'google', returns the full GoogleMapsProvider (geocoding with cache/HTTP).
- * For 'mapbox', returns a stub until that provider is implemented.
+ * This is the long-term, provider-agnostic entry point: one factory, multiple
+ * backends (google, mapbox, etc.). For 'google', returns the full
+ * GoogleMapsProvider (geocoding with cache/HTTP). For 'mapbox', returns a stub
+ * until that provider is implemented.
  *
  * @param config - Provider identifier and provider-specific options.
  * @returns MapProvider implementation.
