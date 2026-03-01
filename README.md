@@ -124,7 +124,31 @@ The workflow runs on every push to `develop` and `main` (lint, test, build). Whe
 
 After `pnpm build`, consumers can use:
 
-- **ESM:** `import { createProvider, GeocodingService } from 'verso-lib'`
-- **CJS:** `const { createProvider, GeocodingService } = require('verso-lib')`
+- **ESM:** `import { createMapClient, createProvider, GeocodingService } from 'verso-lib'`
+- **CJS:** `const { createMapClient, createProvider, GeocodingService } = require('verso-lib')`
 
 Types are resolved via the `types` field in `package.json`.
+
+### Geocoding
+
+- **`createMapClient({ provider: 'google', apiKey, cache?, httpConfig? })`** — Returns a full Google Maps provider (geocoding with caching and HTTP retry). Use when you want a single factory with cache/HTTP options.
+- **`createProvider({ provider: 'google', apiKey, cache?, httpConfig? })`** — Same implementation as above for `'google'`; use when you prefer a provider-agnostic API. For `'mapbox'` a stub is returned until that provider is implemented.
+
+Example with cache:
+
+```ts
+import { createMapClient, MemoryCache } from 'verso-lib'
+
+const cache = new MemoryCache()
+const provider = createMapClient({
+  provider: 'google',
+  apiKey: process.env.GOOGLE_MAPS_API_KEY!,
+  cache,
+})
+const results = await provider.geocode('Av. Paulista, 1000, São Paulo')
+// results[0].coordinates, results[0].address, etc.
+```
+
+To force a fresh result (bypass cache), pass `skipCache: true` in options: `provider.geocode('Address', { skipCache: true })`.
+
+**Note:** Respect provider rate limits (e.g. Google Geocoding API quotas). Use throttling or a queue in high-throughput scenarios.

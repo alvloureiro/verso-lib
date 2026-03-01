@@ -19,7 +19,10 @@ import type {
 import type { Cache } from '../../core/cache.interface'
 import { HttpClient } from '../../http/http-client'
 import { HttpError } from '../../http/types'
-import { generateCacheKey } from '../../utils/cache-keys'
+import { generateGeocodeCacheKey } from '../../utils/cache-keys'
+
+/** Default TTL for geocode cache: 7 days (in seconds). */
+const DEFAULT_GEOCODE_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 
 /** Response shape from Google Geocoding API (geocode/json). */
 interface GoogleGeocodeResponse {
@@ -52,14 +55,21 @@ export class GoogleMapsProvider implements MapProvider {
 	/** Exposed for testing cache injection. */
 	public readonly cache: Cache
 	private readonly httpClient: HttpClient
+	private readonly geocodeCacheTtlSeconds: number | undefined
 
 	constructor(
 		apiKey: string,
 		cache: Cache,
-		httpConfig?: { timeout?: number; retries?: number }
+		httpConfig?: {
+			timeout?: number
+			retries?: number
+			/** Override default geocode cache TTL (seconds). */
+			geocodeCacheTtlSeconds?: number
+		}
 	) {
 		this.apiKey = apiKey
 		this.cache = cache
+		this.geocodeCacheTtlSeconds = httpConfig?.geocodeCacheTtlSeconds
 		this.httpClient = new HttpClient({
 			baseURL: 'https://maps.googleapis.com/maps/api',
 			timeout: httpConfig?.timeout,
@@ -71,10 +81,11 @@ export class GoogleMapsProvider implements MapProvider {
 		address: string,
 		options?: GeocodeOptions
 	): Promise<GeocodeResult[]> {
-		const cacheKey = this.generateGeocodeCacheKey(address, options)
-		const cached = await this.cache.get<GeocodeResult[]>(cacheKey)
-		if (cached != null) {
-			return cached
+		const cacheKey = generateGeocodeCacheKey(address, options)
+		const skipCache = options?.skipCache === true
+		if (!skipCache) {
+			const cached = await this.cache.get<GeocodeResult[]>(cacheKey)
+			if (cached != null) return cached
 		}
 
 		const params: Record<string, string> = {
@@ -101,8 +112,11 @@ export class GoogleMapsProvider implements MapProvider {
 				params,
 			})
 			const results = this.parseGeocodeResponse(response)
-			const ttlSeconds = 7 * 24 * 60 * 60
-			await this.cache.set(cacheKey, results, ttlSeconds)
+			if (!skipCache) {
+				const ttlSeconds =
+					this.geocodeCacheTtlSeconds ?? DEFAULT_GEOCODE_CACHE_TTL_SECONDS
+				await this.cache.set(cacheKey, results, ttlSeconds)
+			}
 			return results
 		} catch (err) {
 			// Some proxies or routes may return 404 for missing resource; treat as no results.
@@ -111,14 +125,6 @@ export class GoogleMapsProvider implements MapProvider {
 			}
 			throw err
 		}
-	}
-
-	private generateGeocodeCacheKey(
-		address: string,
-		options?: GeocodeOptions
-	): string {
-		const normalizedAddress = address.toLowerCase().trim()
-		return generateCacheKey('geocode', normalizedAddress, options ?? {})
 	}
 
 	private parseGeocodeResponse(

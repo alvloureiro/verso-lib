@@ -279,6 +279,24 @@ describe('GoogleMapsProvider - geocode', () => {
 		)
 	})
 
+	it('should bypass cache when options.skipCache is true', async () => {
+		mockRequest.mockResolvedValue({
+			status: 'OK',
+			results: [
+				{
+					formatted_address: 'Fresh',
+					geometry: { location: { lat: 1, lng: 2 } },
+					place_id: 'p1',
+					address_components: [],
+				},
+			],
+		})
+
+		await provider.geocode('Same', { skipCache: true })
+		await provider.geocode('Same', { skipCache: true })
+		expect(mockRequest).toHaveBeenCalledTimes(2)
+	})
+
 	it('should use same cache key for same options with different key order', async () => {
 		mockRequest.mockResolvedValue({
 			status: 'OK',

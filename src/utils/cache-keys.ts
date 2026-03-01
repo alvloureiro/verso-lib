@@ -2,7 +2,11 @@
  * Deterministic cache key generation for provider caches.
  * Uses a simple hash so it works in browser, React Native, and Node.
  * Object keys are normalized (sorted) so key order does not affect the hash.
+ * Key generation is linear in input size. Keys are best-effort unique;
+ * collisions are possible for different inputs.
  */
+
+import type { GeocodeOptions } from '../core/provider.interface'
 
 /**
  * Stringify a value for hashing. Objects are serialized with sorted keys
@@ -43,4 +47,24 @@ export function generateCacheKey(prefix: string, ...parts: unknown[]): string {
 	}
 
 	return `${prefix}:${Math.abs(hash).toString(36)}`
+}
+
+/**
+ * Builds a deterministic cache key for a geocode request.
+ * Reusable across providers so cache key shape stays consistent.
+ *
+ * @param address - Address string (normalized to lower case and trimmed).
+ * @param options - Optional geocode options (region, language, bounds, etc.).
+ * @returns A short key of the form `geocode:hash`
+ */
+export function generateGeocodeCacheKey(
+	address: string,
+	options?: GeocodeOptions
+): string {
+	const normalizedAddress = address.toLowerCase().trim()
+	const opts = options ?? {}
+	const rest = Object.fromEntries(
+		Object.entries(opts).filter(([k]) => k !== 'skipCache')
+	)
+	return generateCacheKey('geocode', normalizedAddress, rest)
 }

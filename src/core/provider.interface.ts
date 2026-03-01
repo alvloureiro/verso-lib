@@ -23,6 +23,8 @@ export interface GeocodeOptions {
 	bounds?: Bounds
 	/** Component filtering (e.g. { country: 'BR', postal_code: '01310-100' }). */
 	components?: Record<string, string>
+	/** When true, skip cache read and write (e.g. for refresh). */
+	skipCache?: boolean
 }
 
 /**
