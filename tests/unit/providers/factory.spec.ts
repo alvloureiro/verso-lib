@@ -62,14 +62,11 @@ describe('createMapClient', () => {
 		)
 	})
 
-	it('skeleton methods throw NotImplemented errors', async () => {
+	it('unimplemented methods throw NotImplemented errors', async () => {
 		const client = createMapClient({
 			provider: 'google',
 			apiKey: 'test-key',
 		})
-		await expect(client.geocode('address')).rejects.toThrow(
-			'NotImplemented: geocode'
-		)
 		await expect(client.reverseGeocode(0, 0)).rejects.toThrow(
 			'NotImplemented: reverseGeocode'
 		)
