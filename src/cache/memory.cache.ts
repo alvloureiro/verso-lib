@@ -44,4 +44,9 @@ export class MemoryCache implements Cache {
 		}
 		return true
 	}
+
+	/** Clear all entries. Useful in tests. */
+	clear(): void {
+		this.store.clear()
+	}
 }
