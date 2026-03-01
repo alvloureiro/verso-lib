@@ -19,6 +19,7 @@ export type { Cache } from './core/cache.interface'
 export type {
 	MapProvider,
 	GeocodeOptions,
+	ReverseGeocodeOptions,
 	DistanceMatrixOptions,
 	RouteOptions,
 } from './core/provider.interface'
@@ -39,10 +40,7 @@ export type {
 
 // Cache implementations
 export { NoopCache } from './cache/noop.cache'
-export {
-	MemoryCache,
-	type MemoryCacheOptions,
-} from './cache/memory.cache'
+export { MemoryCache, type MemoryCacheOptions } from './cache/memory.cache'
 export { RedisCache } from './cache/redis.cache'
 export type { RedisLikeClient } from './cache/redis.cache'
 

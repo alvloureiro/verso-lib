@@ -10,6 +10,7 @@
 
 import type {
 	GeocodeOptions,
+	ReverseGeocodeOptions,
 	DistanceMatrixOptions,
 	RouteOptions,
 	MapProvider,
@@ -58,11 +59,13 @@ export class MapboxProvider implements MapProvider {
 
 	async reverseGeocode(
 		lat: number,
-		lng: number
+		lng: number,
+		options?: ReverseGeocodeOptions
 	): Promise<ReverseGeocodeResult> {
 		// TODO: call Mapbox Reverse Geocoding API
 		void this.accessToken
 		void this.baseUrl
+		void options
 		return {
 			address: { formattedAddress: '' },
 			coordinates: { lat, lng },

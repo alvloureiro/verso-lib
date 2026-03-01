@@ -2,9 +2,11 @@
  * Google Maps provider. Implements geocoding and other map APIs.
  */
 
+import type { Cache } from '../../core/cache.interface'
 import type {
 	MapProvider,
 	GeocodeOptions,
+	ReverseGeocodeOptions,
 	DistanceMatrixOptions,
 	RouteOptions,
 } from '../../core/provider.interface'
@@ -42,25 +44,66 @@ interface GoogleGeocodeResponse {
 	error_message?: string
 }
 
+/** Response shape from Google Geocoding API reverse (geocode/json with latlng). */
+interface GoogleReverseGeocodeResponse {
+	status: string
+	results?: Array<{
+		formatted_address: string
+		place_id: string
+		address_components: Array<{
+			long_name: string
+			short_name: string
+			types: string[]
+		}>
+		geometry: {
+			location: { lat: number; lng: number }
+			location_type: string
+		}
+	}>
+	error_message?: string
+}
+
+/** HTTP config for the Google provider. */
+interface GoogleHttpConfig {
+	timeout?: number
+	retries?: number
+	baseUrl?: string
+}
+
 /**
  * Google Maps provider. Used by createProvider/createMapClient
- * when provider is 'google'. Does not cache; use GeocodingService for caching.
+ * when provider is 'google'. Geocoding uses no cache (use GeocodingService);
+ * reverse geocoding uses optional injected cache when provided.
  */
 const DEFAULT_GOOGLE_MAPS_BASE_URL = 'https://maps.googleapis.com/maps/api'
 
 export class GoogleMapsProvider implements MapProvider {
 	private readonly apiKey: string
 	private readonly httpClient: HttpClient
+	private readonly cache: Cache | undefined
 
+	constructor(apiKey: string, httpConfig?: GoogleHttpConfig)
+	constructor(apiKey: string, cache: Cache, httpConfig?: GoogleHttpConfig)
 	constructor(
 		apiKey: string,
-		httpConfig?: {
-			timeout?: number
-			retries?: number
-			baseUrl?: string
-		}
+		cacheOrHttpConfig?: Cache | GoogleHttpConfig,
+		httpConfig?: GoogleHttpConfig
 	) {
 		this.apiKey = apiKey
+		const isCache = (x: unknown): x is Cache =>
+			typeof x === 'object' &&
+			x !== null &&
+			'get' in x &&
+			'set' in x &&
+			typeof (x as Cache).get === 'function' &&
+			typeof (x as Cache).set === 'function'
+		if (cacheOrHttpConfig && isCache(cacheOrHttpConfig)) {
+			this.cache = cacheOrHttpConfig
+			httpConfig = httpConfig ?? {}
+		} else {
+			this.cache = undefined
+			httpConfig = (cacheOrHttpConfig as GoogleHttpConfig) ?? {}
+		}
 		this.httpClient = new HttpClient({
 			baseURL: httpConfig?.baseUrl ?? DEFAULT_GOOGLE_MAPS_BASE_URL,
 			timeout: httpConfig?.timeout,
@@ -204,13 +247,99 @@ export class GoogleMapsProvider implements MapProvider {
 		return address
 	}
 
+	/**
+	 * Reverse geocode coordinates to a structured address. Uses optional cache
+	 * when provided to minimize API calls (30-day TTL).
+	 *
+	 * @param lat - Latitude
+	 * @param lng - Longitude
+	 * @param options - Optional language, resultType, locationType
+	 * @returns Reverse geocode result with address and location type
+	 */
 	async reverseGeocode(
 		lat: number,
-		lng: number
+		lng: number,
+		options?: ReverseGeocodeOptions
 	): Promise<ReverseGeocodeResult> {
-		void lat
-		void lng
-		throw new Error('NotImplemented: reverseGeocode')
+		const cacheKey = this.generateReverseGeocodeCacheKey(lat, lng, options)
+		if (this.cache) {
+			const cached = await this.cache.get<ReverseGeocodeResult>(cacheKey)
+			if (cached) return cached
+		}
+
+		const params: Record<string, string> = {
+			latlng: `${lat},${lng}`,
+			key: this.apiKey,
+		}
+		if (options?.language) params.language = options.language
+		if (options?.resultType?.length)
+			params.result_type = options.resultType.join('|')
+		if (options?.locationType?.length)
+			params.location_type = options.locationType.join('|')
+
+		try {
+			const response =
+				await this.httpClient.request<GoogleReverseGeocodeResponse>({
+					url: '/geocode/json',
+					method: 'GET',
+					params,
+				})
+			const result = this.parseReverseGeocodeResponse(response, {
+				lat,
+				lng,
+			})
+			if (this.cache) {
+				await this.cache.set(cacheKey, result, 30 * 24 * 60 * 60)
+			}
+			return result
+		} catch (err) {
+			if (err instanceof HttpError && err.status === 404) {
+				throw new Error('No address found for the given coordinates')
+			}
+			throw err
+		}
+	}
+
+	private generateReverseGeocodeCacheKey(
+		lat: number,
+		lng: number,
+		options?: ReverseGeocodeOptions
+	): string {
+		const roundedLat = Math.round(lat * 1e5) / 1e5
+		const roundedLng = Math.round(lng * 1e5) / 1e5
+		const optionsString = options ? JSON.stringify(options) : ''
+		return `reverse:${roundedLat},${roundedLng}:${optionsString}`
+	}
+
+	private parseReverseGeocodeResponse(
+		response: GoogleReverseGeocodeResponse,
+		inputCoords: { lat: number; lng: number }
+	): ReverseGeocodeResult {
+		if (response.status !== 'OK') {
+			if (response.status === 'ZERO_RESULTS') {
+				throw new Error('No address found for the given coordinates')
+			}
+			throw new Error(
+				`Reverse geocoding API error: ${response.status} - ${response.error_message ?? ''}`
+			)
+		}
+		if (!response.results?.length) {
+			throw new Error('No address found for the given coordinates')
+		}
+		const first = response.results[0]
+		const addressComponents = this.extractAddressComponents(
+			first.address_components ?? []
+		)
+		return {
+			address: {
+				formattedAddress: first.formatted_address,
+				...addressComponents,
+				placeId: first.place_id,
+			},
+			coordinates: inputCoords,
+			placeId: first.place_id,
+			locationType: first.geometry?.location_type,
+		}
 	}
 
 	async getDistanceMatrix(

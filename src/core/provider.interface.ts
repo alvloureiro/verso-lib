@@ -12,6 +12,18 @@ import type {
 } from './types'
 
 /**
+ * Options for reverse geocoding requests (coordinates -> address)
+ */
+export interface ReverseGeocodeOptions {
+	/** Language for results (e.g. 'pt-BR') */
+	language?: string
+	/** Restrict to specific address types (e.g. ['street_address', 'route']) */
+	resultType?: string[]
+	/** Restrict to specific location types (e.g. ['ROOFTOP', 'RANGE_INTERPOLATED']) */
+	locationType?: string[]
+}
+
+/**
  * Options for geocoding requests
  */
 export interface GeocodeOptions {
@@ -62,9 +74,14 @@ export interface MapProvider {
 	 * Convert geographic coordinates to an address
 	 * @param lat - Latitude
 	 * @param lng - Longitude
+	 * @param options - Optional language, resultType, locationType
 	 * @returns Reverse geocode result with address information
 	 */
-	reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult>
+	reverseGeocode(
+		lat: number,
+		lng: number,
+		options?: ReverseGeocodeOptions
+	): Promise<ReverseGeocodeResult>
 
 	/**
 	 * Calculate distances and durations between multiple origins and destinations

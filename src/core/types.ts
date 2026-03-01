@@ -51,6 +51,10 @@ export interface GeocodeResult {
 export interface ReverseGeocodeResult {
 	address: Address
 	coordinates: LatLng
+	/** Google's place ID, if available */
+	placeId?: string
+	/** e.g. "ROOFTOP", "RANGE_INTERPOLATED", "GEOMETRIC_CENTER", "APPROXIMATE" */
+	locationType?: string
 }
 
 /**

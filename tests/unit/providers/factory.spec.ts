@@ -48,9 +48,6 @@ describe('createMapClient', () => {
 			provider: 'google',
 			apiKey: 'test-key',
 		})
-		await expect(client.reverseGeocode(0, 0)).rejects.toThrow(
-			'NotImplemented: reverseGeocode'
-		)
 		await expect(
 			client.getDistanceMatrix([{ lat: 0, lng: 0 }], [{ lat: 1, lng: 1 }])
 		).rejects.toThrow('NotImplemented: getDistanceMatrix')
