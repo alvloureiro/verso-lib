@@ -9,6 +9,7 @@ import { http, HttpResponse } from 'msw'
 import { createProvider } from '@/providers'
 
 const GOOGLE_GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
+const CUSTOM_BASE_URL = 'https://custom.google.api/geocode/json'
 
 const mockGoogleResponse = {
 	status: 'OK',
@@ -63,7 +64,8 @@ const mockGoogleResponse = {
 }
 
 const server = setupServer(
-	http.get(GOOGLE_GEOCODE_URL, () => HttpResponse.json(mockGoogleResponse))
+	http.get(GOOGLE_GEOCODE_URL, () => HttpResponse.json(mockGoogleResponse)),
+	http.get(CUSTOM_BASE_URL, () => HttpResponse.json(mockGoogleResponse))
 )
 
 describe('geocode integration (msw)', () => {
@@ -99,5 +101,16 @@ describe('geocode integration (msw)', () => {
 			},
 			partialMatch: false,
 		})
+	})
+
+	it('uses custom baseUrl when provided (e.g. for testing or proxies)', async () => {
+		const provider = createProvider({
+			provider: 'google',
+			apiKey: 'test-key',
+			baseUrl: 'https://custom.google.api',
+		})
+		const results = await provider.geocode('Av. Paulista, 1000')
+		expect(results).toHaveLength(1)
+		expect(results[0].address.formattedAddress).toContain('Av. Paulista')
 	})
 })

@@ -46,17 +46,23 @@ interface GoogleGeocodeResponse {
  * Google Maps provider. Used by createProvider/createMapClient
  * when provider is 'google'. Does not cache; use GeocodingService for caching.
  */
+const DEFAULT_GOOGLE_MAPS_BASE_URL = 'https://maps.googleapis.com/maps/api'
+
 export class GoogleMapsProvider implements MapProvider {
 	private readonly apiKey: string
 	private readonly httpClient: HttpClient
 
 	constructor(
 		apiKey: string,
-		httpConfig?: { timeout?: number; retries?: number }
+		httpConfig?: {
+			timeout?: number
+			retries?: number
+			baseUrl?: string
+		}
 	) {
 		this.apiKey = apiKey
 		this.httpClient = new HttpClient({
-			baseURL: 'https://maps.googleapis.com/maps/api',
+			baseURL: httpConfig?.baseUrl ?? DEFAULT_GOOGLE_MAPS_BASE_URL,
 			timeout: httpConfig?.timeout,
 			maxRetries: httpConfig?.retries,
 		})

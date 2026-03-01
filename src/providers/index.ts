@@ -10,7 +10,7 @@ import type { MapboxProviderConfig } from './mapbox/mapbox-provider'
 
 /** Optional HTTP config for createProvider (google). */
 interface CreateProviderGoogleOptions {
-	httpConfig?: { timeout?: number; retries?: number }
+	httpConfig?: { timeout?: number; retries?: number; baseUrl?: string }
 }
 
 /**
@@ -22,6 +22,8 @@ export interface MapClientConfig {
 	provider: 'google'
 	/** API key for the chosen provider. */
 	apiKey: string
+	/** Optional base URL (e.g. for testing or enterprise proxies). */
+	baseUrl?: string
 	/** Optional HTTP client configuration (timeout, retries). */
 	httpConfig?: { timeout?: number; retries?: number }
 }
@@ -37,7 +39,10 @@ export interface MapClientConfig {
 export function createMapClient(config: MapClientConfig): MapProvider {
 	switch (config.provider) {
 		case 'google':
-			return new GoogleMapsProvider(config.apiKey, config.httpConfig)
+			return new GoogleMapsProvider(config.apiKey, {
+				...config.httpConfig,
+				baseUrl: config.baseUrl,
+			})
 		default: {
 			const p = (config as { provider: string }).provider
 			throw new Error(`Unsupported provider: ${p}`)
@@ -62,7 +67,10 @@ export type ProviderConfig =
  */
 export function createProvider(config: ProviderConfig): MapProvider {
 	if (config.provider === 'google') {
-		return new GoogleMapsProvider(config.apiKey, config.httpConfig)
+		return new GoogleMapsProvider(config.apiKey, {
+			...config.httpConfig,
+			baseUrl: config.baseUrl,
+		})
 	}
 	if (config.provider === 'mapbox') {
 		return new MapboxProvider({
