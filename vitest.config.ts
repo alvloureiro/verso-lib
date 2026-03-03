@@ -16,7 +16,6 @@ export default defineConfig({
 				'tests/**',
 				'src/index.ts',
 				'src/services/index.ts',
-				'src/providers/mapbox/mapbox-provider.ts',
 			],
 			// Target 90%; raised from 80/85 as coverage for redis, distance, route, core is added
 			thresholds: {

@@ -135,7 +135,7 @@ Types are resolved via the `types` field in `package.json`.
 
 Use `createProvider({ provider: 'google', apiKey, httpConfig? })` to get a Google Maps provider (geocoding with HTTP retry). Providers do not cache; use **GeocodingService** for caching (option-aware keys, single policy).
 
-**Mapbox:** `createProvider({ provider: 'mapbox', ... })` returns **MapboxProvider**, which is a **stub only** (e.g. `geocode()` returns `[]`). It is kept so that provider-agnostic code and types work; do not use in production until a real Mapbox implementation is added.
+**Mapbox:** `createProvider({ provider: 'mapbox', accessToken, baseUrl?, cache?, httpConfig? })` returns **MapboxProvider** with full support for geocoding, reverse geocoding, and place autocomplete via the Mapbox Geocoding API. You can also use **`createMapClient({ provider: 'mapbox', apiKey, cache?, httpConfig? })`** (apiKey is used as the Mapbox access token).
 
 Example without cache:
 
@@ -182,4 +182,4 @@ const predictions: PlacePrediction[] = await provider.autocomplete('Av. Paulista
 // predictions[0].description, predictions[0].placeId
 ```
 
-Mapbox provider stub returns `[]` for `autocomplete` until implemented.
+Mapbox provider uses the same Geocoding API with `types=address,poi` and optional proximity for autocomplete.

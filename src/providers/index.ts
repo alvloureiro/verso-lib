@@ -2,7 +2,9 @@
  * Provider factory: create a map provider by ID with the given config.
  */
 
+import type { Cache } from '../core/cache.interface'
 import type { MapProvider } from '../core/provider.interface'
+import { NoopCache } from '../cache/noop.cache'
 import { GoogleMapsProvider } from './google'
 import type { GoogleProviderConfig } from './google/config'
 import { MapboxProvider } from './mapbox/mapbox-provider'
@@ -18,12 +20,14 @@ interface CreateProviderGoogleOptions {
  * @deprecated Prefer createProvider for the long-term, provider-agnostic API.
  */
 export interface MapClientConfig {
-	/** Provider identifier – initially only 'google'. */
-	provider: 'google'
-	/** API key for the chosen provider. */
+	/** Provider identifier: 'google' or 'mapbox'. */
+	provider: 'google' | 'mapbox'
+	/** API key / access token for the chosen provider. */
 	apiKey: string
 	/** Optional base URL (e.g. for testing or enterprise proxies). */
 	baseUrl?: string
+	/** Optional cache instance (Mapbox uses this for geocode/reverse). */
+	cache?: Cache
 	/** Optional HTTP client configuration (timeout, retries). */
 	httpConfig?: { timeout?: number; retries?: number }
 }
@@ -37,11 +41,19 @@ export interface MapClientConfig {
  * @deprecated Prefer createProvider for the long-term API.
  */
 export function createMapClient(config: MapClientConfig): MapProvider {
+	const cache = config.cache ?? new NoopCache()
 	switch (config.provider) {
 		case 'google':
 			return new GoogleMapsProvider(config.apiKey, {
 				...config.httpConfig,
 				baseUrl: config.baseUrl,
+			})
+		case 'mapbox':
+			return new MapboxProvider({
+				accessToken: config.apiKey,
+				baseUrl: config.baseUrl,
+				cache,
+				httpConfig: config.httpConfig,
 			})
 		default: {
 			const p = (config as { provider: string }).provider
@@ -59,8 +71,8 @@ export type ProviderConfig =
  * Create a map provider instance by provider ID and config.
  * This is the long-term, provider-agnostic entry point: one factory, multiple
  * backends (google, mapbox, etc.). For 'google', returns the full
- * GoogleMapsProvider (geocoding with cache/HTTP). For 'mapbox', returns a stub
- * until that provider is implemented.
+ * GoogleMapsProvider (geocoding with cache/HTTP). For 'mapbox', returns
+ * MapboxProvider (geocoding, reverse geocoding, autocomplete).
  *
  * @param config - Provider identifier and provider-specific options.
  * @returns MapProvider implementation.
@@ -76,6 +88,8 @@ export function createProvider(config: ProviderConfig): MapProvider {
 		return new MapboxProvider({
 			accessToken: config.accessToken,
 			baseUrl: config.baseUrl,
+			cache: config.cache,
+			httpConfig: config.httpConfig,
 		})
 	}
 	throw new Error(

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createMapClient } from '@/providers'
 import { GoogleMapsProvider } from '@/providers/google'
+import { MapboxProvider } from '@/providers/mapbox'
 import type { MapProvider } from '@/core/provider.interface'
 
 describe('createMapClient', () => {
@@ -10,6 +11,14 @@ describe('createMapClient', () => {
 			apiKey: 'test-key',
 		})
 		expect(client).toBeInstanceOf(GoogleMapsProvider)
+	})
+
+	it('returns an instance of MapboxProvider when provider is "mapbox"', () => {
+		const client = createMapClient({
+			provider: 'mapbox',
+			apiKey: 'mapbox-token',
+		})
+		expect(client).toBeInstanceOf(MapboxProvider)
 	})
 
 	it('returns an object that conforms to MapProvider (duck typing)', () => {

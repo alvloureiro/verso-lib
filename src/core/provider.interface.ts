@@ -38,6 +38,8 @@ export interface GeocodeOptions {
 	components?: Record<string, string>
 	/** When true, skip cache read and write (e.g. for refresh). */
 	skipCache?: boolean
+	/** Optional location to bias results (e.g. for Mapbox proximity). */
+	location?: LatLng
 }
 
 /**
