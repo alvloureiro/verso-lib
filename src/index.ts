@@ -27,10 +27,16 @@ export type {
 } from './core/provider.interface'
 
 // Provider factory and implementations
-export { createMapClient, createProvider, MapboxProvider } from './providers'
+export {
+	createMapClient,
+	createProvider,
+	MapboxProvider,
+	OpenStreetMapProvider,
+} from './providers'
 export type { MapClientConfig, ProviderConfig } from './providers'
 export type { GoogleProviderConfig } from './providers/google/config'
 export type { MapboxProviderConfig } from './providers/mapbox/mapbox-provider'
+export type { OpenStreetMapProviderConfig } from './providers/openstreetmap/openstreetmap-provider'
 
 // Services
 export { GeocodingService, DistanceService, RouteService } from './services'

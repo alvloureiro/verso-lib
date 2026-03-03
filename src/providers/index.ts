@@ -9,6 +9,8 @@ import { GoogleMapsProvider } from './google'
 import type { GoogleProviderConfig } from './google/config'
 import { MapboxProvider } from './mapbox/mapbox-provider'
 import type { MapboxProviderConfig } from './mapbox/mapbox-provider'
+import { OpenStreetMapProvider } from './openstreetmap/openstreetmap-provider'
+import type { OpenStreetMapProviderConfig } from './openstreetmap/openstreetmap-provider'
 
 /** Optional HTTP config for createProvider (google). */
 interface CreateProviderGoogleOptions {
@@ -20,13 +22,15 @@ interface CreateProviderGoogleOptions {
  * @deprecated Prefer createProvider for the long-term, provider-agnostic API.
  */
 export interface MapClientConfig {
-	/** Provider identifier: 'google' or 'mapbox'. */
-	provider: 'google' | 'mapbox'
-	/** API key / access token for the chosen provider. */
+	/** Provider identifier: 'google', 'mapbox', or 'openstreetmap'. */
+	provider: 'google' | 'mapbox' | 'openstreetmap'
+	/** API key / access token (required for google/mapbox; for openstreetmap used as User-Agent if userAgent not set). */
 	apiKey: string
+	/** Optional for openstreetmap: User-Agent string (Nominatim usage policy). Defaults to apiKey when not set. */
+	userAgent?: string
 	/** Optional base URL (e.g. for testing or enterprise proxies). */
 	baseUrl?: string
-	/** Optional cache instance (Mapbox uses this for geocode/reverse). */
+	/** Optional cache instance (Mapbox/OpenStreetMap use this for geocode/reverse). */
 	cache?: Cache
 	/** Optional HTTP client configuration (timeout, retries). */
 	httpConfig?: { timeout?: number; retries?: number }
@@ -44,13 +48,24 @@ export function createMapClient(config: MapClientConfig): MapProvider {
 	const cache = config.cache ?? new NoopCache()
 	switch (config.provider) {
 		case 'google':
+			if (!config.apiKey)
+				throw new Error('apiKey is required for Google provider')
 			return new GoogleMapsProvider(config.apiKey, {
 				...config.httpConfig,
 				baseUrl: config.baseUrl,
 			})
 		case 'mapbox':
+			if (!config.apiKey)
+				throw new Error('apiKey is required for Mapbox provider')
 			return new MapboxProvider({
 				accessToken: config.apiKey,
+				baseUrl: config.baseUrl,
+				cache,
+				httpConfig: config.httpConfig,
+			})
+		case 'openstreetmap':
+			return new OpenStreetMapProvider({
+				userAgent: config.userAgent ?? config.apiKey,
 				baseUrl: config.baseUrl,
 				cache,
 				httpConfig: config.httpConfig,
@@ -66,13 +81,15 @@ export type ProviderConfig =
 	| ({ provider: 'google' } & GoogleProviderConfig &
 			CreateProviderGoogleOptions)
 	| ({ provider: 'mapbox' } & MapboxProviderConfig)
+	| ({ provider: 'openstreetmap' } & OpenStreetMapProviderConfig)
 
 /**
  * Create a map provider instance by provider ID and config.
  * This is the long-term, provider-agnostic entry point: one factory, multiple
  * backends (google, mapbox, etc.). For 'google', returns the full
  * GoogleMapsProvider (geocoding with cache/HTTP). For 'mapbox', returns
- * MapboxProvider (geocoding, reverse geocoding, autocomplete).
+ * MapboxProvider (geocoding, reverse geocoding, autocomplete). For
+ * 'openstreetmap', returns OpenStreetMapProvider (Nominatim).
  *
  * @param config - Provider identifier and provider-specific options.
  * @returns MapProvider implementation.
@@ -92,9 +109,19 @@ export function createProvider(config: ProviderConfig): MapProvider {
 			httpConfig: config.httpConfig,
 		})
 	}
+	if (config.provider === 'openstreetmap') {
+		return new OpenStreetMapProvider({
+			userAgent: config.userAgent,
+			email: config.email,
+			baseUrl: config.baseUrl,
+			cache: config.cache,
+			httpConfig: config.httpConfig,
+		})
+	}
 	throw new Error(
 		`Unknown provider: ${(config as { provider: string }).provider}`
 	)
 }
 
 export { MapboxProvider } from './mapbox/mapbox-provider'
+export { OpenStreetMapProvider } from './openstreetmap/openstreetmap-provider'

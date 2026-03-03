@@ -22,6 +22,15 @@ describe('createProvider', () => {
 		expect(provider.geocode).toBeDefined()
 	})
 
+	it('creates OpenStreetMap provider with userAgent', () => {
+		const provider = createProvider({
+			provider: 'openstreetmap',
+			userAgent: 'TestApp/1.0',
+		})
+		expect(provider).toBeDefined()
+		expect(provider.geocode).toBeDefined()
+	})
+
 	it('throws for unknown provider', () => {
 		expect(() =>
 			createProvider({ provider: 'unknown' as 'google', apiKey: 'x' })

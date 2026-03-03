@@ -137,6 +137,8 @@ Use `createProvider({ provider: 'google', apiKey, httpConfig? })` to get a Googl
 
 **Mapbox:** `createProvider({ provider: 'mapbox', accessToken, baseUrl?, cache?, httpConfig? })` returns **MapboxProvider** with full support for geocoding, reverse geocoding, and place autocomplete via the Mapbox Geocoding API. You can also use **`createMapClient({ provider: 'mapbox', apiKey, cache?, httpConfig? })`** (apiKey is used as the Mapbox access token).
 
+**OpenStreetMap (Nominatim):** `createProvider({ provider: 'openstreetmap', userAgent, email?, baseUrl?, cache?, httpConfig? })` returns **OpenStreetMapProvider** with geocoding, reverse geocoding, and autocomplete via the Nominatim API. No API key required; a **User-Agent** identifying your application is required by [Nominatim’s usage policy](https://operations.osmfoundation.org/policies/nominatim/). You can also use **`createMapClient({ provider: 'openstreetmap', apiKey, userAgent?, cache?, httpConfig? })`** (apiKey or userAgent is used as the User-Agent string).
+
 Example without cache:
 
 ```ts
@@ -182,4 +184,4 @@ const predictions: PlacePrediction[] = await provider.autocomplete('Av. Paulista
 // predictions[0].description, predictions[0].placeId
 ```
 
-Mapbox provider uses the same Geocoding API with `types=address,poi` and optional proximity for autocomplete.
+Mapbox provider uses the same Geocoding API with `types=address,poi` and optional proximity for autocomplete. OpenStreetMap provider uses the Nominatim search endpoint for autocomplete (same as geocode, with optional viewbox and country filter).
