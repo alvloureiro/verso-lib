@@ -6,7 +6,11 @@
  * collisions are possible for different inputs.
  */
 
-import type { GeocodeOptions } from '../core/provider.interface'
+import type {
+	GeocodeOptions,
+	DistanceMatrixOptions,
+} from '../core/provider.interface'
+import type { LatLng } from '../core/types'
 
 /**
  * Stringify a value for hashing. Objects are serialized with sorted keys
@@ -67,4 +71,22 @@ export function generateGeocodeCacheKey(
 		Object.entries(opts).filter(([k]) => k !== 'skipCache')
 	)
 	return generateCacheKey('geocode', normalizedAddress, rest)
+}
+
+/**
+ * Builds a deterministic cache key for a distance matrix request.
+ * Uses sorted origins/destinations and options so key order does not affect the hash.
+ *
+ * @param origins - Array of origin coordinates
+ * @param destinations - Array of destination coordinates
+ * @param options - Optional distance matrix options (mode, avoid, language)
+ * @returns A short key of the form `distance-matrix:hash`
+ */
+export function generateDistanceMatrixCacheKey(
+	origins: LatLng[],
+	destinations: LatLng[],
+	options?: DistanceMatrixOptions
+): string {
+	const opts = options ?? {}
+	return generateCacheKey('distance-matrix', origins, destinations, opts)
 }
