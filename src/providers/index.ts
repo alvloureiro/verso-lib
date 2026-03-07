@@ -11,6 +11,8 @@ import { MapboxProvider } from './mapbox/mapbox-provider'
 import type { MapboxProviderConfig } from './mapbox/mapbox-provider'
 import { OpenStreetMapProvider } from './openstreetmap/openstreetmap-provider'
 import type { OpenStreetMapProviderConfig } from './openstreetmap/openstreetmap-provider'
+import { OsmProvider } from './osm'
+import type { OsmProviderConfig } from './osm'
 
 /** Optional HTTP config for createProvider (google). */
 interface CreateProviderGoogleOptions {
@@ -22,9 +24,9 @@ interface CreateProviderGoogleOptions {
  * @deprecated Prefer createProvider for the long-term, provider-agnostic API.
  */
 export interface MapClientConfig {
-	/** Provider identifier: 'google', 'mapbox', or 'openstreetmap'. */
-	provider: 'google' | 'mapbox' | 'openstreetmap'
-	/** API key / access token (required for google/mapbox; for openstreetmap used as User-Agent if userAgent not set). */
+	/** Provider identifier: 'google', 'mapbox', 'openstreetmap', or 'osm'. */
+	provider: 'google' | 'mapbox' | 'openstreetmap' | 'osm'
+	/** API key / access token (required for google/mapbox; for openstreetmap used as User-Agent if userAgent not set). Optional for osm (ignored for public OSRM). */
 	apiKey: string
 	/** Optional for openstreetmap: User-Agent string (Nominatim usage policy). Defaults to apiKey when not set. */
 	userAgent?: string
@@ -50,7 +52,7 @@ export function createMapClient(config: MapClientConfig): MapProvider {
 		case 'google':
 			if (!config.apiKey)
 				throw new Error('apiKey is required for Google provider')
-			return new GoogleMapsProvider(config.apiKey, {
+			return new GoogleMapsProvider(config.apiKey, cache, {
 				...config.httpConfig,
 				baseUrl: config.baseUrl,
 			})
@@ -70,6 +72,12 @@ export function createMapClient(config: MapClientConfig): MapProvider {
 				cache,
 				httpConfig: config.httpConfig,
 			})
+		case 'osm':
+			return new OsmProvider({
+				baseUrl: config.baseUrl,
+				cache,
+				httpConfig: config.httpConfig,
+			})
 		default: {
 			const p = (config as { provider: string }).provider
 			throw new Error(`Unsupported provider: ${p}`)
@@ -82,6 +90,7 @@ export type ProviderConfig =
 			CreateProviderGoogleOptions)
 	| ({ provider: 'mapbox' } & MapboxProviderConfig)
 	| ({ provider: 'openstreetmap' } & OpenStreetMapProviderConfig)
+	| ({ provider: 'osm' } & OsmProviderConfig)
 
 /**
  * Create a map provider instance by provider ID and config.
@@ -118,6 +127,14 @@ export function createProvider(config: ProviderConfig): MapProvider {
 			httpConfig: config.httpConfig,
 		})
 	}
+	if (config.provider === 'osm') {
+		return new OsmProvider({
+			apiKey: config.apiKey,
+			baseUrl: config.baseUrl,
+			cache: config.cache,
+			httpConfig: config.httpConfig,
+		})
+	}
 	throw new Error(
 		`Unknown provider: ${(config as { provider: string }).provider}`
 	)
@@ -125,3 +142,4 @@ export function createProvider(config: ProviderConfig): MapProvider {
 
 export { MapboxProvider } from './mapbox/mapbox-provider'
 export { OpenStreetMapProvider } from './openstreetmap/openstreetmap-provider'
+export { OsmProvider } from './osm'

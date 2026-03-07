@@ -31,6 +31,12 @@ describe('createProvider', () => {
 		expect(provider.geocode).toBeDefined()
 	})
 
+	it('creates OSM (OSRM) provider', () => {
+		const provider = createProvider({ provider: 'osm' })
+		expect(provider).toBeDefined()
+		expect(provider.getDistanceMatrix).toBeDefined()
+	})
+
 	it('throws for unknown provider', () => {
 		expect(() =>
 			createProvider({ provider: 'unknown' as 'google', apiKey: 'x' })

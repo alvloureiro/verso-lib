@@ -32,11 +32,13 @@ export {
 	createProvider,
 	MapboxProvider,
 	OpenStreetMapProvider,
+	OsmProvider,
 } from './providers'
 export type { MapClientConfig, ProviderConfig } from './providers'
 export type { GoogleProviderConfig } from './providers/google/config'
 export type { MapboxProviderConfig } from './providers/mapbox/mapbox-provider'
 export type { OpenStreetMapProviderConfig } from './providers/openstreetmap/openstreetmap-provider'
+export type { OsmProviderConfig } from './providers/osm'
 
 // Services
 export { GeocodingService, DistanceService, RouteService } from './services'

@@ -3,6 +3,7 @@ import { createMapClient } from '@/providers'
 import { GoogleMapsProvider } from '@/providers/google'
 import { MapboxProvider } from '@/providers/mapbox'
 import { OpenStreetMapProvider } from '@/providers/openstreetmap'
+import { OsmProvider } from '@/providers/osm'
 import type { MapProvider } from '@/core/provider.interface'
 
 describe('createMapClient', () => {
@@ -28,6 +29,14 @@ describe('createMapClient', () => {
 			apiKey: 'MyApp/1.0',
 		})
 		expect(client).toBeInstanceOf(OpenStreetMapProvider)
+	})
+
+	it('returns an instance of OsmProvider when provider is "osm"', () => {
+		const client = createMapClient({
+			provider: 'osm',
+			apiKey: '',
+		})
+		expect(client).toBeInstanceOf(OsmProvider)
 	})
 
 	it('returns an object that conforms to MapProvider (duck typing)', () => {
@@ -61,14 +70,11 @@ describe('createMapClient', () => {
 		)
 	})
 
-	it('unimplemented methods throw NotImplemented errors', async () => {
+	it('getRoute throws NotImplemented for Google provider', async () => {
 		const client = createMapClient({
 			provider: 'google',
 			apiKey: 'test-key',
 		})
-		await expect(
-			client.getDistanceMatrix([{ lat: 0, lng: 0 }], [{ lat: 1, lng: 1 }])
-		).rejects.toThrow('NotImplemented: getDistanceMatrix')
 		await expect(
 			client.getRoute({ lat: 0, lng: 0 }, { lat: 1, lng: 1 })
 		).rejects.toThrow('NotImplemented: getRoute')
