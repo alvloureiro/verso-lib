@@ -17,11 +17,13 @@ import type {
 	GeocodeResult,
 	ReverseGeocodeResult,
 	DistanceMatrixResponse,
+	DistanceMatrixEntry,
 	RouteResult,
 	PlacePrediction,
 } from '../../core/types'
 import { HttpClient } from '../../http/http-client'
 import { HttpError } from '../../http/types'
+import { generateDistanceMatrixCacheKey } from '../../utils/cache-keys'
 
 /** Response shape from Google Geocoding API (geocode/json). */
 interface GoogleGeocodeResponse {
@@ -77,6 +79,21 @@ interface GoogleReverseGeocodeResponse {
 			location: { lat: number; lng: number }
 			location_type: string
 		}
+	}>
+	error_message?: string
+}
+
+/** Response shape from Google Distance Matrix API (distancematrix/json). */
+interface GoogleDistanceMatrixResponse {
+	status: string
+	origin_addresses?: string[]
+	destination_addresses?: string[]
+	rows?: Array<{
+		elements: Array<{
+			status: string
+			distance?: { text: string; value: number }
+			duration?: { text: string; value: number }
+		}>
 	}>
 	error_message?: string
 }
@@ -438,15 +455,84 @@ export class GoogleMapsProvider implements MapProvider {
 		}))
 	}
 
+	/**
+	 * Get distance matrix between multiple origins and destinations via
+	 * Google Distance Matrix API. Uses optional cache (7-day TTL) when provided.
+	 */
 	async getDistanceMatrix(
 		origins: LatLng[],
 		destinations: LatLng[],
 		options?: DistanceMatrixOptions
 	): Promise<DistanceMatrixResponse> {
-		void origins
-		void destinations
-		void options
-		throw new Error('NotImplemented: getDistanceMatrix')
+		if (origins.length === 0 || destinations.length === 0) {
+			return { origins, destinations, rows: [] }
+		}
+
+		const cacheKey = generateDistanceMatrixCacheKey(origins, destinations, options)
+		if (this.cache) {
+			const cached = await this.cache.get<DistanceMatrixResponse>(cacheKey)
+			if (cached) return cached
+		}
+
+		const params: Record<string, string> = {
+			origins: origins.map((p) => `${p.lat},${p.lng}`).join('|'),
+			destinations: destinations.map((p) => `${p.lat},${p.lng}`).join('|'),
+			key: this.apiKey,
+			units: 'metric',
+		}
+		if (options?.mode) params.mode = options.mode
+		if (options?.language) params.language = options.language
+		if (options?.avoid?.length) params.avoid = options.avoid.join('|')
+
+		const response =
+			await this.httpClient.request<GoogleDistanceMatrixResponse>({
+				url: '/distancematrix/json',
+				method: 'GET',
+				params,
+			})
+
+		const result = this.parseDistanceMatrixResponse(
+			response,
+			origins,
+			destinations
+		)
+		if (this.cache) {
+			await this.cache.set(cacheKey, result, 7 * 24 * 60 * 60)
+		}
+		return result
+	}
+
+	private mapGoogleElementStatus(status: string): DistanceMatrixEntry['status'] {
+		if (status === 'OK') return 'OK'
+		if (status === 'ZERO_RESULTS' || status === 'NOT_FOUND') return status
+		return 'ZERO_RESULTS'
+	}
+
+	private parseDistanceMatrixResponse(
+		response: GoogleDistanceMatrixResponse,
+		origins: LatLng[],
+		destinations: LatLng[]
+	): DistanceMatrixResponse {
+		if (response.status !== 'OK') {
+			throw new Error(
+				`Distance Matrix API error: ${response.status} - ${response.error_message ?? ''}`
+			)
+		}
+		const rows: DistanceMatrixEntry[][] = (response.rows ?? []).map((row) =>
+			row.elements.map((el) => {
+				const status = this.mapGoogleElementStatus(el.status)
+				const distanceValue = el.distance?.value ?? 0
+				const durationValue = el.duration?.value ?? 0
+				const distanceText = el.distance?.text ?? `${Math.round(distanceValue / 1000)} km`
+				const durationText = el.duration?.text ?? `${Math.round(durationValue / 60)} mins`
+				return {
+					distance: { text: distanceText, value: distanceValue },
+					duration: { text: durationText, value: durationValue },
+					status,
+				}
+			})
+		)
+		return { origins, destinations, rows }
 	}
 
 	async getRoute(
