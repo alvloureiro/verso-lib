@@ -39,3 +39,16 @@ export interface MapboxFeature {
 	matching_text?: string
 	matching_place_name?: string
 }
+
+/**
+ * Mapbox Matrix API response (durations in seconds, distances in meters).
+ * @see https://docs.mapbox.com/api/navigation/matrix/
+ */
+export interface MapboxMatrixResponse {
+	code: string
+	durations?: (number | null)[][]
+	distances?: (number | null)[][]
+	sources?: unknown[]
+	destinations?: unknown[]
+	message?: string
+}

@@ -17,6 +17,7 @@ import type {
 	GeocodeResult,
 	ReverseGeocodeResult,
 	DistanceMatrixResponse,
+	DistanceMatrixEntry,
 	RouteResult,
 	PlacePrediction,
 	LatLng,
@@ -24,7 +25,16 @@ import type {
 } from '../../core/types'
 import { HttpClient } from '../../http/http-client'
 import { NoopCache } from '../../cache/noop.cache'
-import type { MapboxGeocodeResponse, MapboxFeature } from './types'
+import { generateDistanceMatrixCacheKey } from '../../utils/cache-keys'
+import {
+	formatDistanceMeters,
+	formatDurationSeconds,
+} from '../../utils/format-distance-duration'
+import type {
+	MapboxGeocodeResponse,
+	MapboxFeature,
+	MapboxMatrixResponse,
+} from './types'
 
 const DEFAULT_MAPBOX_GEOCODING_BASE =
 	'https://api.mapbox.com/geocoding/v5/mapbox.places'
@@ -36,10 +46,12 @@ export interface MapboxProviderConfig {
 	httpConfig?: { timeout?: number; retries?: number }
 }
 
+const DEFAULT_MAPBOX_MATRIX_BASE =
+	'https://api.mapbox.com/directions-matrix/v1/mapbox'
+
 /**
- * Mapbox provider implementing geocode, reverseGeocode, and autocomplete.
- * getDistanceMatrix and getRoute remain stubs until Mapbox Matrix/Directions
- * are implemented.
+ * Mapbox provider implementing geocode, reverseGeocode, autocomplete, and
+ * getDistanceMatrix via Mapbox Matrix API. getRoute remains a stub.
  */
 export class MapboxProvider implements MapProvider {
 	private readonly httpClient: HttpClient
@@ -165,18 +177,114 @@ export class MapboxProvider implements MapProvider {
 		}
 	}
 
+	/**
+	 * Get distance matrix via Mapbox Matrix API. Uses cache (7-day TTL).
+	 */
 	async getDistanceMatrix(
 		origins: LatLng[],
 		destinations: LatLng[],
 		options?: DistanceMatrixOptions
 	): Promise<DistanceMatrixResponse> {
-		void options
-		const rows = origins.map(() =>
-			destinations.map(() => ({
-				distance: { text: '0 km', value: 0 },
-				duration: { text: '0 mins', value: 0 },
-				status: 'ZERO_RESULTS' as const,
-			}))
+		if (origins.length === 0 || destinations.length === 0) {
+			return { origins, destinations, rows: [] }
+		}
+
+		const cacheKey = generateDistanceMatrixCacheKey(
+			origins,
+			destinations,
+			options
+		)
+		const cached = await this.cache.get<DistanceMatrixResponse>(cacheKey)
+		if (cached) return cached
+
+		const profile = this.mapModeToMapboxProfile(options?.mode ?? 'driving')
+		const allCoords = [...origins, ...destinations]
+		const coordinates = allCoords
+			.map((p) => `${p.lng},${p.lat}`)
+			.join(';')
+		const sources = Array.from(
+			{ length: origins.length },
+			(_, i) => i
+		).join(';')
+		const destIndices = Array.from(
+			{ length: destinations.length },
+			(_, i) => origins.length + i
+		).join(';')
+
+		const matrixUrl = `${DEFAULT_MAPBOX_MATRIX_BASE}/${profile}/${coordinates}`
+		const params: Record<string, string> = {
+			access_token: this.apiKey,
+			sources,
+			destinations: destIndices,
+			annotations: 'distance,duration',
+		}
+
+		const response = await this.httpClient.request<MapboxMatrixResponse>({
+			url: matrixUrl,
+			method: 'GET',
+			params,
+		})
+
+		if (response.code !== 'Ok') {
+			throw new Error(
+				`Mapbox Matrix API error: ${response.code} - ${response.message ?? ''}`
+			)
+		}
+
+		const result = this.parseMapboxMatrixResponse(
+			response,
+			origins,
+			destinations
+		)
+		await this.cache.set(cacheKey, result, 7 * 24 * 60 * 60)
+		return result
+	}
+
+	private mapModeToMapboxProfile(
+		mode: DistanceMatrixOptions['mode']
+	): string {
+		switch (mode) {
+			case 'walking':
+				return 'walking'
+			case 'bicycling':
+				return 'cycling'
+			case 'transit':
+				return 'driving'
+			default:
+				return 'driving'
+		}
+	}
+
+	private parseMapboxMatrixResponse(
+		response: MapboxMatrixResponse,
+		origins: LatLng[],
+		destinations: LatLng[]
+	): DistanceMatrixResponse {
+		const durations = response.durations ?? []
+		const distances = response.distances ?? []
+		const rows: DistanceMatrixEntry[][] = origins.map((_, i) =>
+			destinations.map((_, j) => {
+				const dur = durations[i]?.[j]
+				const dist = distances[i]?.[j]
+				const hasValue =
+					typeof dur === 'number' && typeof dist === 'number'
+				const status: DistanceMatrixEntry['status'] = hasValue
+					? 'OK'
+					: 'NOT_FOUND'
+				const durationValue = typeof dur === 'number' ? dur : 0
+				const distanceValue = typeof dist === 'number' ? dist : 0
+				return {
+					distance: {
+						text: formatDistanceMeters(distanceValue),
+						value: distanceValue,
+					},
+					duration: {
+						text: formatDurationSeconds(durationValue),
+						value: durationValue,
+					},
+					status,
+				}
+			})
 		)
 		return { origins, destinations, rows }
 	}
