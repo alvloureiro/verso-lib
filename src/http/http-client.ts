@@ -270,10 +270,12 @@ export class HttpClient {
 		const combined: Record<string, string> = { ...this.defaultHeaders }
 		if (requestHeaders instanceof Headers) {
 			requestHeaders.forEach((v, k) => {
+				// eslint-disable-next-line security/detect-object-injection -- k from Headers
 				combined[k] = v
 			})
 		} else if (Array.isArray(requestHeaders)) {
 			for (const [k, v] of requestHeaders) {
+				// eslint-disable-next-line security/detect-object-injection -- k from headers array
 				combined[k] = v
 			}
 		} else if (requestHeaders != null) {

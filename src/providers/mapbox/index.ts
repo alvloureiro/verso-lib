@@ -199,13 +199,10 @@ export class MapboxProvider implements MapProvider {
 
 		const profile = this.mapModeToMapboxProfile(options?.mode ?? 'driving')
 		const allCoords = [...origins, ...destinations]
-		const coordinates = allCoords
-			.map((p) => `${p.lng},${p.lat}`)
-			.join(';')
-		const sources = Array.from(
-			{ length: origins.length },
-			(_, i) => i
-		).join(';')
+		const coordinates = allCoords.map((p) => `${p.lng},${p.lat}`).join(';')
+		const sources = Array.from({ length: origins.length }, (_, i) => i).join(
+			';'
+		)
 		const destIndices = Array.from(
 			{ length: destinations.length },
 			(_, i) => origins.length + i
@@ -240,9 +237,7 @@ export class MapboxProvider implements MapProvider {
 		return result
 	}
 
-	private mapModeToMapboxProfile(
-		mode: DistanceMatrixOptions['mode']
-	): string {
+	private mapModeToMapboxProfile(mode: DistanceMatrixOptions['mode']): string {
 		switch (mode) {
 			case 'walking':
 				return 'walking'
@@ -264,10 +259,11 @@ export class MapboxProvider implements MapProvider {
 		const distances = response.distances ?? []
 		const rows: DistanceMatrixEntry[][] = origins.map((_, i) =>
 			destinations.map((_, j) => {
+				// eslint-disable-next-line security/detect-object-injection -- i,j are array indices
 				const dur = durations[i]?.[j]
+				// eslint-disable-next-line security/detect-object-injection -- i,j are array indices
 				const dist = distances[i]?.[j]
-				const hasValue =
-					typeof dur === 'number' && typeof dist === 'number'
+				const hasValue = typeof dur === 'number' && typeof dist === 'number'
 				const status: DistanceMatrixEntry['status'] = hasValue
 					? 'OK'
 					: 'NOT_FOUND'

@@ -111,10 +111,9 @@ export class OsmProvider implements MapProvider {
 		const profile = this.mapModeToOsrmProfile(options?.mode ?? 'driving')
 		const allCoords = [...origins, ...destinations]
 		const coordinates = allCoords.map((p) => `${p.lng},${p.lat}`).join(';')
-		const sources = Array.from(
-			{ length: origins.length },
-			(_, i) => i
-		).join(';')
+		const sources = Array.from({ length: origins.length }, (_, i) => i).join(
+			';'
+		)
 		const destIndices = Array.from(
 			{ length: destinations.length },
 			(_, i) => origins.length + i
@@ -138,18 +137,12 @@ export class OsmProvider implements MapProvider {
 			)
 		}
 
-		const result = this.parseOsrmTableResponse(
-			response,
-			origins,
-			destinations
-		)
+		const result = this.parseOsrmTableResponse(response, origins, destinations)
 		await this.cache.set(cacheKey, result, 7 * 24 * 60 * 60)
 		return result
 	}
 
-	private mapModeToOsrmProfile(
-		mode: DistanceMatrixOptions['mode']
-	): string {
+	private mapModeToOsrmProfile(mode: DistanceMatrixOptions['mode']): string {
 		switch (mode) {
 			case 'walking':
 				return 'foot'
@@ -171,10 +164,11 @@ export class OsmProvider implements MapProvider {
 		const distances = response.distances ?? []
 		const rows: DistanceMatrixEntry[][] = origins.map((_, i) =>
 			destinations.map((_, j) => {
+				// eslint-disable-next-line security/detect-object-injection -- i,j are array indices
 				const dur = durations[i]?.[j]
+				// eslint-disable-next-line security/detect-object-injection -- i,j are array indices
 				const dist = distances[i]?.[j]
-				const hasValue =
-					typeof dur === 'number' && typeof dist === 'number'
+				const hasValue = typeof dur === 'number' && typeof dist === 'number'
 				const status: DistanceMatrixEntry['status'] = hasValue
 					? 'OK'
 					: 'NOT_FOUND'

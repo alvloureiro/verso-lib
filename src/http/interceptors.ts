@@ -16,6 +16,16 @@ const SENSITIVE_PARAM_NAMES = new Set([
 	'token',
 ])
 
+/** Convert Headers to a plain object (avoids relying on Headers.entries() in older libs). */
+function headersToRecord(headers: Headers): Record<string, string> {
+	const out: Record<string, string> = {}
+	headers.forEach((value, key) => {
+		// eslint-disable-next-line security/detect-object-injection -- key from Headers
+		out[key] = value
+	})
+	return out
+}
+
 /**
  * Redact sensitive query parameters (e.g. API keys, tokens) from a URL.
  * Used when logging request URLs so secrets are never written to logs.
@@ -27,11 +37,11 @@ export function redactSensitiveParamsFromUrl(url: string): string {
 		const parsed = url.startsWith('http')
 			? new URL(url)
 			: new URL(url, 'http://invalid.local')
-		for (const [name] of parsed.searchParams) {
+		parsed.searchParams.forEach((_, name) => {
 			if (SENSITIVE_PARAM_NAMES.has(name.toLowerCase())) {
 				parsed.searchParams.set(name, '***')
 			}
-		}
+		})
 		const redacted = parsed.toString()
 		return url.startsWith('http') ? redacted : parsed.pathname + parsed.search
 	} catch {
@@ -108,7 +118,7 @@ export function logRequest(
 	const safeUrl = redactSensitiveParamsFromUrl(url)
 	const headerObj =
 		headers instanceof Headers
-			? Object.fromEntries(headers.entries())
+			? headersToRecord(headers)
 			: Array.isArray(headers)
 				? Object.fromEntries(headers)
 				: (headers as Record<string, string>)

@@ -23,12 +23,14 @@ function stringifyForHash(value: unknown): string {
 		return '[' + value.map(stringifyForHash).join(',') + ']'
 	}
 	const keys = Object.keys(value as Record<string, unknown>).sort()
-	const pairs = keys.map(
-		(k) =>
+	const pairs = keys.map((k) => {
+		return (
 			JSON.stringify(k) +
 			':' +
+			// eslint-disable-next-line security/detect-object-injection -- k from Object.keys
 			stringifyForHash((value as Record<string, unknown>)[k])
-	)
+		)
+	})
 	return '{' + pairs.join(',') + '}'
 }
 

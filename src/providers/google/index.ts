@@ -111,6 +111,8 @@ interface GoogleHttpConfig {
  * reverse geocoding uses optional injected cache when provided.
  */
 const DEFAULT_GOOGLE_MAPS_BASE_URL = 'https://maps.googleapis.com/maps/api'
+const ERROR_NO_ADDRESS_FOR_COORDINATES =
+	'No address found for the given coordinates'
 
 export class GoogleMapsProvider implements MapProvider {
 	private readonly apiKey: string
@@ -329,7 +331,7 @@ export class GoogleMapsProvider implements MapProvider {
 			return result
 		} catch (err) {
 			if (err instanceof HttpError && err.status === 404) {
-				throw new Error('No address found for the given coordinates')
+				throw new Error(ERROR_NO_ADDRESS_FOR_COORDINATES)
 			}
 			throw err
 		}
@@ -352,14 +354,14 @@ export class GoogleMapsProvider implements MapProvider {
 	): ReverseGeocodeResult {
 		if (response.status !== 'OK') {
 			if (response.status === 'ZERO_RESULTS') {
-				throw new Error('No address found for the given coordinates')
+				throw new Error(ERROR_NO_ADDRESS_FOR_COORDINATES)
 			}
 			throw new Error(
 				`Reverse geocoding API error: ${response.status} - ${response.error_message ?? ''}`
 			)
 		}
 		if (!response.results?.length) {
-			throw new Error('No address found for the given coordinates')
+			throw new Error(ERROR_NO_ADDRESS_FOR_COORDINATES)
 		}
 		const first = response.results[0]
 		const addressComponents = this.extractAddressComponents(
@@ -468,7 +470,11 @@ export class GoogleMapsProvider implements MapProvider {
 			return { origins, destinations, rows: [] }
 		}
 
-		const cacheKey = generateDistanceMatrixCacheKey(origins, destinations, options)
+		const cacheKey = generateDistanceMatrixCacheKey(
+			origins,
+			destinations,
+			options
+		)
 		if (this.cache) {
 			const cached = await this.cache.get<DistanceMatrixResponse>(cacheKey)
 			if (cached) return cached
@@ -502,7 +508,9 @@ export class GoogleMapsProvider implements MapProvider {
 		return result
 	}
 
-	private mapGoogleElementStatus(status: string): DistanceMatrixEntry['status'] {
+	private mapGoogleElementStatus(
+		status: string
+	): DistanceMatrixEntry['status'] {
 		if (status === 'OK') return 'OK'
 		if (status === 'ZERO_RESULTS' || status === 'NOT_FOUND') return status
 		return 'ZERO_RESULTS'
@@ -523,8 +531,10 @@ export class GoogleMapsProvider implements MapProvider {
 				const status = this.mapGoogleElementStatus(el.status)
 				const distanceValue = el.distance?.value ?? 0
 				const durationValue = el.duration?.value ?? 0
-				const distanceText = el.distance?.text ?? `${Math.round(distanceValue / 1000)} km`
-				const durationText = el.duration?.text ?? `${Math.round(durationValue / 60)} mins`
+				const distanceText =
+					el.distance?.text ?? `${Math.round(distanceValue / 1000)} km`
+				const durationText =
+					el.duration?.text ?? `${Math.round(durationValue / 60)} mins`
 				return {
 					distance: { text: distanceText, value: distanceValue },
 					duration: { text: durationText, value: durationValue },
